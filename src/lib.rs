@@ -9,7 +9,7 @@ use std::str::from_utf8;
 // use crate::scan::Scan;
 
 mod encryption;
-mod file_handler;
+pub mod file_handler;
 mod scan;
 
 //test
@@ -184,7 +184,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             app_settings.time_last_scan = scan.time_stamp.to_string();
         }
     }
-
+    println!("{:#?}", app_settings);
+    println!("{:?}", confy::get_configuration_file_path("sift", None));
     confy::store("sift", None, &app_settings)?;
 
     Ok(())

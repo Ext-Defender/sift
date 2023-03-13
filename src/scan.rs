@@ -6,7 +6,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 // use crossbeam::{Sender, Receiver};
-
+use crate::file_handler;
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 #[derive(Debug)]
 pub struct Scan {
     pub full_scan: bool,
@@ -61,34 +63,71 @@ impl Scan {
         let patterns = Arc::new(load_regex(&self.keywords));
         let root = PathBuf::from(root);
         let walk = WalkDir::new(root);
+
+        let (tx, rx): (
+            Sender<(Vec<String>, String)>,
+            Receiver<(Vec<String>, String)>,
+        ) = mpsc::channel();
+        let mut threads = Vec::new();
+
         for dir in walk.into_iter() {
-            if !full_scan {
-                if self.verbose {
-                    match dir?.metadata() {
-                        Ok(c) => {
-                            let time: DateTime<Utc> = DateTime::from(c.modified()?);
-                            if time.ge(&last_time_stamp.unwrap()) {
-                                println!("{:?}", time);
-                            }
-                        }
-                        Err(e) => {
-                            println!("ERROR: {e}");
-                            continue;
-                        }
+            let file_meta = dir?;
+            let path = file_meta.path();
+            let thread_tx = tx.clone();
+            let patterns = Arc::new(patterns.clone());
+            let thr = thread::spawn(move || {
+                let ret = match path.extension() {
+                    Some(ext) => match ext.to_str() {
+                        Some("pdf") => file_handler::scan_pdf(&path, &patterns),
+                        Some("txt") => file_handler::scan_txt(&path, &patterns),
+                        Some("rtf") => Ok(None),
+                        Some("xlsx") => Ok(None),
+                        Some("pptx") => Ok(None),
+                        Some("docx") => Ok(None),
+                        Some("wpd") => Ok(None),
+                        Some("doc") | Some("ppt") | Some("xls") => Ok(None),
+                        _ => Ok(None),
+                    },
+                    None => Ok(None),
+                };
+                match ret {
+                    Ok(Some(res)) => {
+                        thread_tx.send(res).unwrap();
                     }
+                    _ => (),
                 }
-            } else {
-                if self.verbose {
-                    println!("{:?}", dir?.metadata());
-                }
+            });
+            threads.push(thr);
+
+            // if self.verbose {
+            //     println!("Scanning: {:?}", path);
+            // }
+        }
+
+        let mut thread_rets = Vec::with_capacity(5);
+        for ret in rx.try_iter() {
+            thread_rets.push(ret);
+        }
+
+        for t in threads {
+            match t.join() {
+                Ok(_) => (),
+                Err(_) => (),
             }
         }
+
+        for ret in thread_rets {
+            println!("{:?}", ret);
+        }
+
         if self.verbose {
             println!("Finished: {}", Utc::now());
         }
+
         Ok(())
     }
 }
+
 fn load_regex(keywords: &Vec<String>) -> Vec<Regex> {
     let mut res = Vec::new();
     for keyword in keywords {
