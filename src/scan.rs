@@ -1,14 +1,14 @@
+use crate::file_handler;
 use chrono::prelude::*;
+use csv::WriterBuilder;
+use indicatif::ProgressBar;
 use jwalk::WalkDir;
 use regex::Regex;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::thread;
-// use crossbeam::{Sender, Receiver};
-use crate::file_handler;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::time::SystemTime;
+use std::{fs, thread};
 #[derive(Debug)]
 pub struct Scan {
     pub full_scan: bool,
@@ -19,6 +19,12 @@ pub struct Scan {
     pub last_scan_time_stamp: Option<DateTime<Utc>>,
 }
 
+#[derive(serde::Serialize)]
+struct Row {
+    keywords: String,
+    path: String,
+}
+
 impl Scan {
     pub fn new(
         full_scan: bool,
@@ -26,6 +32,7 @@ impl Scan {
         keywords: Vec<String>,
         roots: Vec<String>,
         last_scan_time_stamp: Option<DateTime<Utc>>,
+        output_dir: PathBuf,
     ) -> Self {
         let time_stamp = Utc::now();
         let scan = Self {
@@ -39,7 +46,57 @@ impl Scan {
 
         for root in &scan.roots {
             match scan.scan(&root, last_scan_time_stamp, full_scan) {
-                Ok(_) => println!("'{root}' scan complete"),
+                Ok(result) => {
+                    println!("'{root}' scan complete");
+                    match result {
+                        Some(findings) => {
+                            if !Path::new(&output_dir).exists() {
+                                fs::create_dir_all(&output_dir).unwrap();
+                            }
+                            let mut output_filename = output_dir.clone();
+
+                            let mut root = root.replace("\\", "");
+                            root = root.replace(":", "");
+                            root = root.replace("/", "");
+
+                            let mut time_stamp = time_stamp.to_string();
+                            time_stamp = time_stamp.replace(":", "-");
+                            time_stamp = time_stamp.replace(".", "-");
+                            time_stamp = time_stamp.replace(" ", "_");
+                            output_filename.push(format!("{root}_ {time_stamp}.csv"));
+                            match fs::File::create(&output_filename) {
+                                Ok(_) => {
+                                    println!("Output file created: {}", output_filename.display())
+                                }
+                                Err(e) => eprintln!("{e}"),
+                            }
+
+                            let mut writer = WriterBuilder::new()
+                                .has_headers(true)
+                                .from_path(output_filename)
+                                .unwrap();
+                            println!("\n\nWriting to csv in output directory.\n\n");
+                            for rec in findings {
+                                let mut words = String::new();
+                                for word in rec.0 {
+                                    words.push_str(&word);
+                                    words.push_str(" ");
+                                }
+                                words = words.trim().to_string();
+                                words = words.replace(" ", " | ");
+                                writer
+                                    .serialize(Row {
+                                        keywords: words,
+                                        path: rec.1,
+                                    })
+                                    .unwrap();
+                            }
+
+                            println!("\n\nFinished writing: {}\n\n", Utc::now());
+                        }
+                        None => println!("INFO: No findings"),
+                    }
+                }
                 Err(e) => println!("!'{root}' scan failed with error {e}"),
             }
         }
@@ -52,79 +109,126 @@ impl Scan {
         root: &String,
         last_time_stamp: Option<DateTime<Utc>>,
         full_scan: bool,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<Option<Vec<(Vec<String>, String)>>, Box<dyn Error>> {
         if self.verbose {
             println!("Full scan: {full_scan}");
             println!("Scanning: {root}");
             println!("Keywords: {:?}", self.keywords);
             println!("Start time: {}\n\n", self.time_stamp);
         }
+
         let root = root.to_string();
         let patterns = Arc::new(load_regex(&self.keywords));
         let root = PathBuf::from(root);
         let walk = WalkDir::new(root);
 
-        let (tx, rx): (
-            Sender<(Vec<String>, String)>,
-            Receiver<(Vec<String>, String)>,
-        ) = mpsc::channel();
         let mut threads = Vec::new();
 
-        for dir in walk.into_iter() {
-            let file_meta = dir?;
+        let mut findings = Vec::new();
+
+        let mut last_time_stamp = match last_time_stamp {
+            Some(t) => SystemTime::from(t),
+            None => SystemTime::UNIX_EPOCH,
+        };
+        if full_scan {
+            last_time_stamp = SystemTime::UNIX_EPOCH;
+        }
+
+        // crossterm::cursor::Hide;
+        let spinner = ProgressBar::new_spinner();
+        for obj in walk.into_iter() {
+            if !self.verbose {
+                spinner.tick();
+            }
+
+            let file_meta = obj?;
             let path = file_meta.path();
-            let thread_tx = tx.clone();
+            let scan_file: bool = match file_meta.metadata() {
+                Ok(meta) => match meta.modified() {
+                    Ok(modified) => last_time_stamp.le(&modified),
+                    Err(_) => true,
+                },
+                Err(_) => true,
+            };
+
+            // let thread_tx = tx.clone();
             let patterns = Arc::new(patterns.clone());
-            let thr = thread::spawn(move || {
+
+            if scan_file {
+                if self.verbose {
+                    println!("Scanning: {:?}", file_meta.path());
+                }
+
                 let ret = match path.extension() {
                     Some(ext) => match ext.to_str() {
-                        Some("pdf") => file_handler::scan_pdf(&path, &patterns),
+                        Some("pdf") => {
+                            let thr = thread::spawn(move || {
+                                match file_handler::scan_pdf(&path, &patterns) {
+                                    Ok(c) => c,
+                                    Err(_) => None,
+                                }
+                            });
+                            threads.push(thr);
+                            Ok(None)
+                        }
+                        Some("xlsx") | Some("pptx") | Some("docx") => {
+                            let thr = thread::spawn(move || {
+                                match file_handler::scan_ooxml(&path, &patterns) {
+                                    Ok(c) => c,
+                                    Err(_) => None,
+                                }
+                            });
+                            threads.push(thr);
+                            Ok(None)
+                        }
                         Some("txt") => file_handler::scan_txt(&path, &patterns),
-                        Some("rtf") => Ok(None),
-                        Some("xlsx") => Ok(None),
-                        Some("pptx") => Ok(None),
-                        Some("docx") => Ok(None),
-                        Some("wpd") => Ok(None),
-                        Some("doc") | Some("ppt") | Some("xls") => Ok(None),
+                        Some("rtf") => file_handler::scan_rtf(&path, &patterns),
+                        Some("wpd") => file_handler::scan_rtf(&path, &patterns),
+                        Some("doc") | Some("ppt") | Some("xls") => {
+                            let thr =
+                                thread::spawn(move || {
+                                    match file_handler::scan_legacy_office(&path, &patterns) {
+                                        Ok(c) => c,
+                                        Err(_) => None,
+                                    }
+                                });
+                            threads.push(thr);
+                            Ok(None)
+                        }
                         _ => Ok(None),
                     },
                     None => Ok(None),
                 };
+
                 match ret {
                     Ok(Some(res)) => {
-                        thread_tx.send(res).unwrap();
+                        findings.push(res);
                     }
                     _ => (),
                 }
-            });
-            threads.push(thr);
-
-            // if self.verbose {
-            //     println!("Scanning: {:?}", path);
-            // }
+            }
         }
-
-        let mut thread_rets = Vec::with_capacity(5);
-        for ret in rx.try_iter() {
-            thread_rets.push(ret);
-        }
+        spinner.finish();
 
         for t in threads {
             match t.join() {
-                Ok(_) => (),
-                Err(_) => (),
+                Ok(Some(r)) => findings.push(r),
+                _ => (),
             }
         }
 
-        for ret in thread_rets {
-            println!("{:?}", ret);
-        }
+        println!("\n\nFinished Scan: {}\n\n", Utc::now());
 
         if self.verbose {
-            println!("Finished: {}", Utc::now());
+            for finding in &findings {
+                println!("{:?}", finding);
+            }
         }
 
-        Ok(())
+        if findings.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(findings))
     }
 }
 

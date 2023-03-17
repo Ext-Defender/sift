@@ -5,8 +5,8 @@ use confy;
 use rpassword;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::path::PathBuf;
 use std::str::from_utf8;
-// use crate::scan::Scan;
 
 mod encryption;
 pub mod file_handler;
@@ -25,12 +25,14 @@ pub struct Config {
     remove_keywords: Option<Vec<String>>,
     display_keywords: bool,
     output_directory: Option<String>,
+    print_settings: bool,
+    reset_settings: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Settings {
     pub initial_scan: bool,
-    pub output_directory: String,
+    pub output_directory: Option<String>,
     pub keywords: Vec<String>,
     pub roots: Vec<String>,
     pub secret: Option<String>,
@@ -41,7 +43,7 @@ impl ::std::default::Default for Settings {
     fn default() -> Self {
         Self {
             initial_scan: true,
-            output_directory: "C".into(),
+            output_directory: None,
             keywords: Vec::new(),
             roots: Vec::new(),
             secret: None,
@@ -51,9 +53,17 @@ impl ::std::default::Default for Settings {
 }
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+    if config.reset_settings {
+        println!("Clearing configs");
+        confy::store("sift", None, Settings::default())?;
+    }
+
     dbg!(&config);
     let mut app_settings: Settings = confy::load("sift", None)?;
-    let password = rpassword::prompt_password("Enter password: ")?;
+    let password = match app_settings.secret {
+        Some(_) => rpassword::prompt_password("Enter password: ")?,
+        None => rpassword::prompt_password("Enter new password: ")?,
+    };
 
     let valid_password: bool = match app_settings.secret {
         None => {
@@ -123,7 +133,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             config.output_directory
         );
         app_settings.initial_scan = true;
-        app_settings.output_directory = config.output_directory.unwrap();
+        app_settings.output_directory = config.output_directory;
     }
 
     confy::store("sift", None, &app_settings)?;
@@ -144,6 +154,11 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         }
     }
 
+    if config.print_settings {
+        println!("{:#?}", app_settings);
+        println!("{:?}", confy::get_configuration_file_path("sift", None));
+    }
+
     if !prescan_checks(&app_settings) {
         println!("!!!Pre-scan checks failed.!!!");
         return Ok(());
@@ -158,10 +173,11 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 keywords.clone(),
                 app_settings.roots.clone(),
                 None,
+                PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
             );
             app_settings.time_last_scan = scan.time_stamp.to_string();
 
-            println!("{:?}", scan);
+            // println!("{:?}", scan);
         } else if app_settings.initial_scan {
             app_settings.initial_scan = false;
             let scan = scan::Scan::new(
@@ -170,6 +186,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 keywords.clone(),
                 app_settings.roots.clone(),
                 None,
+                PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
             );
             app_settings.time_last_scan = scan.time_stamp.to_string();
         } else {
@@ -180,12 +197,12 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 keywords.clone(),
                 app_settings.roots.clone(),
                 Some(last_scan_time),
+                PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
             );
             app_settings.time_last_scan = scan.time_stamp.to_string();
         }
     }
-    println!("{:#?}", app_settings);
-    println!("{:?}", confy::get_configuration_file_path("sift", None));
+
     confy::store("sift", None, &app_settings)?;
 
     Ok(())
@@ -266,6 +283,19 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
                 .short('l')
                 .help("prints the output directory path"),
         )
+        .arg(
+            Arg::new("print_settings")
+                .short('z')
+                .value_name("print_settings")
+                .action(ArgAction::SetTrue)
+                .help("Print settings from config file."),
+        )
+        .arg(
+            Arg::new("reset_config")
+                .short('q')
+                .action(ArgAction::SetTrue)
+                .help("Resets the config file to default (only way to reset password)"),
+        )
         .get_matches();
 
     Ok(Config {
@@ -294,6 +324,8 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
             Some(c) => Some(c.clone()),
             None => None,
         },
+        print_settings: matches.get_flag("print_settings"),
+        reset_settings: matches.get_flag("reset_config"),
     })
 }
 
@@ -313,7 +345,7 @@ fn load_keywords(
 
 fn prescan_checks(app_settings: &Settings) -> bool {
     let mut scan_status = true;
-    if app_settings.output_directory.is_empty() {
+    if app_settings.output_directory.is_none() {
         println!("!Pre-scan check failed:: No output directory designated.");
         scan_status = false
     }
