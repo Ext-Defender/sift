@@ -4,6 +4,7 @@ use clap::{value_parser, Arg, ArgAction, Command};
 use confy;
 use rpassword;
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::error::Error;
 use std::path::PathBuf;
 use std::str::from_utf8;
@@ -58,12 +59,24 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         confy::store("sift", None, Settings::default())?;
     }
 
-    dbg!(&config);
+    // dbg!(&config);
     let mut app_settings: Settings = confy::load("sift", None)?;
-    let password = match app_settings.secret {
-        Some(_) => rpassword::prompt_password("Enter password: ")?,
-        None => rpassword::prompt_password("Enter new password: ")?,
+
+    let key = "SIFTPW";
+    let mut password = match env::var(key) {
+        Ok(p) => {
+            println!("INFO: Using password from env");
+            p
+        }
+        Err(_) => String::new(),
     };
+
+    if password.is_empty() {
+        password = match app_settings.secret {
+            Some(_) => rpassword::prompt_password("Enter password: ")?,
+            None => rpassword::prompt_password("Enter new password: ")?,
+        };
+    }
 
     let valid_password: bool = match app_settings.secret {
         None => {

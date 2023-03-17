@@ -63,7 +63,7 @@ impl Scan {
                             time_stamp = time_stamp.replace(":", "-");
                             time_stamp = time_stamp.replace(".", "-");
                             time_stamp = time_stamp.replace(" ", "_");
-                            output_filename.push(format!("{root}_ {time_stamp}.csv"));
+                            output_filename.push(format!("{root}_{time_stamp}.csv"));
                             match fs::File::create(&output_filename) {
                                 Ok(_) => {
                                     println!("Output file created: {}", output_filename.display())
