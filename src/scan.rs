@@ -48,6 +48,7 @@ impl Scan {
             match scan.scan(&root, last_scan_time_stamp, full_scan) {
                 Ok(result) => {
                     println!("'{root}' scan complete");
+
                     match result {
                         Some(findings) => {
                             if !Path::new(&output_dir).exists() {
@@ -60,10 +61,13 @@ impl Scan {
                             root = root.replace("/", "");
 
                             let mut time_stamp = time_stamp.to_string();
+
                             time_stamp = time_stamp.replace(":", "-");
                             time_stamp = time_stamp.replace(".", "-");
                             time_stamp = time_stamp.replace(" ", "_");
+
                             output_filename.push(format!("{root}_{time_stamp}.csv"));
+
                             match fs::File::create(&output_filename) {
                                 Ok(_) => {
                                     println!("Output file created: {}", output_filename.display())
@@ -75,7 +79,9 @@ impl Scan {
                                 .has_headers(true)
                                 .from_path(output_filename)
                                 .unwrap();
+
                             println!("\n\nWriting to csv in output directory.\n\n");
+
                             for rec in findings {
                                 let mut words = String::new();
                                 for word in rec.0 {
