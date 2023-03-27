@@ -134,7 +134,6 @@ impl Scan {
             last_time_stamp = SystemTime::UNIX_EPOCH;
         }
 
-        // crossterm::cursor::Hide;
         let spinner = ProgressBar::new_spinner();
         for obj in walk.into_iter() {
             if !self.verbose {
@@ -151,71 +150,42 @@ impl Scan {
                 Err(_) => true,
             };
 
-            // let thread_tx = tx.clone();
             let patterns = Arc::new(patterns.clone());
 
             if scan_file {
                 if self.verbose {
                     println!("Scanning: {:?}", file_meta.path());
                 }
+                let thr = thread::spawn(move || {
+                    let ret = match path.extension() {
+                        Some(ext) => match ext.to_str() {
+                            Some("pdf") => file_handler::scan_pdf(&path, &patterns).unwrap_or(None),
+                            Some("xlsx") | Some("pptx") | Some("docx") => {
+                                file_handler::scan_ooxml(&path, &patterns).unwrap_or(None)
+                            }
+                            Some("txt") => file_handler::scan_txt(&path, &patterns).unwrap_or(None),
+                            Some("rtf") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
+                            Some("wpd") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
+                            Some("doc") | Some("ppt") | Some("xls") => {
+                                file_handler::scan_legacy_office(&path, &patterns).unwrap_or(None)
+                            }
+                            _ => None,
+                        },
+                        _ => None,
+                    };
+                    ret
+                });
 
-                let ret = match path.extension() {
-                    Some(ext) => match ext.to_str() {
-                        Some("pdf") => {
-                            let thr = thread::spawn(move || {
-                                match file_handler::scan_pdf(&path, &patterns) {
-                                    Ok(c) => c,
-                                    Err(_) => None,
-                                }
-                            });
-                            threads.push(thr);
-                            Ok(None)
-                        }
-                        Some("xlsx") | Some("pptx") | Some("docx") => {
-                            let thr = thread::spawn(move || {
-                                match file_handler::scan_ooxml(&path, &patterns) {
-                                    Ok(c) => c,
-                                    Err(_) => None,
-                                }
-                            });
-                            threads.push(thr);
-                            Ok(None)
-                        }
-                        Some("txt") => file_handler::scan_txt(&path, &patterns),
-                        Some("rtf") => file_handler::scan_rtf(&path, &patterns),
-                        Some("wpd") => file_handler::scan_rtf(&path, &patterns),
-                        Some("doc") | Some("ppt") | Some("xls") => {
-                            let thr =
-                                thread::spawn(move || {
-                                    match file_handler::scan_legacy_office(&path, &patterns) {
-                                        Ok(c) => c,
-                                        Err(_) => None,
-                                    }
-                                });
-                            threads.push(thr);
-                            Ok(None)
-                        }
-                        _ => Ok(None),
-                    },
-                    None => Ok(None),
-                };
-
-                match ret {
-                    Ok(Some(res)) => {
-                        findings.push(res);
-                    }
-                    _ => (),
-                }
+                threads.push(thr);
             }
         }
+
         spinner.finish();
 
-        for t in threads {
-            match t.join() {
-                Ok(Some(r)) => findings.push(r),
-                _ => (),
-            }
-        }
+        threads.into_iter().for_each(|th| match th.join() {
+            Ok(Some(r)) => findings.push(r),
+            _ => (),
+        });
 
         println!("\n\nFinished Scan: {}\n\n", Utc::now());
 
@@ -233,9 +203,5 @@ impl Scan {
 }
 
 fn load_regex(keywords: &Vec<String>) -> Vec<Regex> {
-    let mut res = Vec::new();
-    for keyword in keywords {
-        res.push(Regex::new(keyword).unwrap())
-    }
-    res
+    keywords.iter().map(|kw| Regex::new(kw).unwrap()).collect()
 }
