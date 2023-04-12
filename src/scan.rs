@@ -1,7 +1,6 @@
 use crate::file_handler;
 use chrono::prelude::*;
 use csv::WriterBuilder;
-use indicatif::ProgressBar;
 use jwalk::WalkDir;
 use regex::Regex;
 use std::error::Error;
@@ -86,10 +85,11 @@ impl Scan {
                                 let mut words = String::new();
                                 for word in rec.0 {
                                     words.push_str(&word);
-                                    words.push_str(" ");
+                                    words.push_str(", ");
                                 }
                                 words = words.trim().to_string();
-                                words = words.replace(" ", " | ");
+                                words = words.trim_end_matches(",").to_string();
+                                // words = words.replace(" ", " | ");
                                 writer
                                     .serialize(Row {
                                         keywords: words,
@@ -125,8 +125,8 @@ impl Scan {
 
         let root = root.to_string();
         let patterns = Arc::new(load_regex(&self.keywords));
-        let root = PathBuf::from(root);
-        let walk = WalkDir::new(root);
+        let root = PathBuf::from(&root);
+        let walk = WalkDir::new(&root);
 
         let mut threads = Vec::new();
 
@@ -140,12 +140,10 @@ impl Scan {
             last_time_stamp = SystemTime::UNIX_EPOCH;
         }
 
-        let spinner = ProgressBar::new_spinner();
+        if !self.verbose {
+            println!("Scanning {:?}... ", root);
+        }
         for obj in walk.into_iter() {
-            if !self.verbose {
-                spinner.tick();
-            }
-
             let file_meta = obj?;
             let path = file_meta.path();
             let scan_file: bool = match file_meta.metadata() {
@@ -169,7 +167,9 @@ impl Scan {
                             Some("xlsx") | Some("pptx") | Some("docx") => {
                                 file_handler::scan_ooxml(&path, &patterns).unwrap_or(None)
                             }
-                            Some("txt") => file_handler::scan_txt(&path, &patterns).unwrap_or(None),
+                            Some("txt") | Some("xml") | Some("html") | Some("htm") => {
+                                file_handler::scan_txt(&path, &patterns).unwrap_or(None)
+                            }
                             Some("rtf") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
                             Some("wpd") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
                             Some("doc") | Some("ppt") | Some("xls") => {
@@ -185,8 +185,6 @@ impl Scan {
                 threads.push(thr);
             }
         }
-
-        spinner.finish();
 
         threads.into_iter().for_each(|th| match th.join() {
             Ok(Some(r)) => findings.push(r),
