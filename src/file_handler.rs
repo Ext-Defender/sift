@@ -19,9 +19,20 @@ pub fn scan_pdf(
         Err(_) => return Ok(None),
     };
     for pattern in keyword_patterns.iter() {
-        if pattern.is_match(&content) {
-            findings.push(pattern.to_string());
+        match pattern.captures(&content) {
+            Some(cap) => {
+                for finding in cap.iter() {
+                    let finding = finding.unwrap().as_str().to_string();
+                    if !findings.contains(&finding) {
+                        findings.push(finding);
+                    }
+                }
+            }
+            _ => (),
         }
+        // if pattern.is_match(&content) {
+        //     findings.push(pattern.to_string());
+        // }
     }
     if findings.len() > 0 {
         return Ok(Some((findings, path.to_str().unwrap().to_string())));
@@ -51,9 +62,21 @@ pub fn scan_ooxml(
             match event {
                 Ok(xml::reader::XmlEvent::Characters(c)) => {
                     for pattern in keyword_patterns.iter() {
-                        if pattern.is_match(&c) && !findings.contains(&pattern.to_string()) {
-                            findings.push(pattern.to_string());
+                        match pattern.captures(&c) {
+                            Some(cap) => {
+                                for finding in cap.iter() {
+                                    let finding = finding.unwrap().as_str().to_string();
+                                    if !findings.contains(&finding) {
+                                        findings.push(finding);
+                                    }
+                                    // println!("{}", finding.unwrap().as_str());
+                                }
+                            }
+                            _ => (),
                         }
+                        // if pattern.is_match(&c) && !findings.contains(&pattern.to_string()) {
+                        //     findings.push(pattern.to_string());
+                        // }
                     }
                 }
                 _ => continue,
@@ -76,23 +99,34 @@ pub fn scan_legacy_office(
     let mut file = fs::File::open(path)?;
     let mut buffer = vec![];
     file.read_to_end(&mut buffer)?;
-    let mut contents = String::new();
+    let mut content = String::new();
     for c in &buffer {
         if c.is_ascii() {
             let ch = *c as char;
             if ch.is_ascii_alphanumeric() {
-                contents.push(ch);
+                content.push(ch);
             }
             if ch.is_ascii_whitespace() {
-                contents.push(' ');
+                content.push(' ');
             }
         }
     }
 
-    for keyword in keyword_patterns.iter() {
-        if keyword.is_match(&contents) {
-            findings.push(keyword.to_string())
+    for pattern in keyword_patterns.iter() {
+        match pattern.captures(&content) {
+            Some(cap) => {
+                for finding in cap.iter() {
+                    let finding = finding.unwrap().as_str().to_string();
+                    if !findings.contains(&finding) {
+                        findings.push(finding);
+                    }
+                }
+            }
+            _ => (),
         }
+        // if keyword.is_match(&contents) {
+        //     findings.push(keyword.to_string())
+        // }
     }
 
     if findings.len() > 0 {
@@ -107,14 +141,25 @@ pub fn scan_txt(
     keyword_patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
     let mut findings: Vec<String> = vec![];
-    let contents = match fs::read_to_string(path) {
+    let content = match fs::read_to_string(path) {
         Ok(c) => c,
         Err(_) => return Ok(None), //TODO log
     };
-    for keyword in keyword_patterns.iter() {
-        if keyword.is_match(&contents) {
-            findings.push(keyword.to_string())
+    for pattern in keyword_patterns.iter() {
+        match pattern.captures(&content) {
+            Some(cap) => {
+                for finding in cap.iter() {
+                    let finding = finding.unwrap().as_str().to_string();
+                    if !findings.contains(&finding) {
+                        findings.push(finding);
+                    }
+                }
+            }
+            _ => (),
         }
+        // if keyword.is_match(&contents) {
+        //     findings.push(keyword.to_string())
+        // }
     }
     if findings.len() > 0 {
         return Ok(Some((findings, path.to_str().unwrap().to_string())));
@@ -132,10 +177,21 @@ pub fn scan_rtf(
     let mut buf = String::new();
     reader.read_to_string(&mut buf)?;
 
-    for keyword in keyword_patterns.iter() {
-        if keyword.is_match(&buf) {
-            findings.push(keyword.to_string())
+    for pattern in keyword_patterns.iter() {
+        match pattern.captures(&buf) {
+            Some(cap) => {
+                for finding in cap.iter() {
+                    let finding = finding.unwrap().as_str().to_string();
+                    if !findings.contains(&finding) {
+                        findings.push(finding);
+                    }
+                }
+            }
+            _ => (),
         }
+        // if keyword.is_match(&buf) {
+        //     findings.push(keyword.to_string())
+        // }
     }
 
     if findings.len() > 0 {

@@ -228,7 +228,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 pub fn get_args() -> Result<Config, Box<dyn Error>> {
     let matches = Command::new("sift")
         .author("Bryan Vinton, bryan.vinton18@gmail.com")
-        .version("0.0.1")
+        .version("0.1.0")
         .about("Searches for keywords in various document types")
         .arg(
             Arg::new("scan")
@@ -316,7 +316,7 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         .arg(
             Arg::new("case-sensitive")
                 .short('i')
-                .help("Makes scan case-sensitive")
+                .help("Makes scan case-sensitive: scans are not case-sensitive by default.")
                 .action(ArgAction::SetTrue),
         )
         .get_matches();
