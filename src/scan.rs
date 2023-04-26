@@ -207,5 +207,12 @@ impl Scan {
 }
 
 fn load_regex(keywords: &Vec<String>) -> Vec<Regex> {
-    keywords.iter().map(|kw| Regex::new(kw).unwrap()).collect()
+    keywords
+        .iter()
+        .map(|kw| {
+            let mut kw = kw.clone();
+            kw = "(?i)".to_owned() + &kw;
+            Regex::new(&kw).unwrap()
+        })
+        .collect()
 }
