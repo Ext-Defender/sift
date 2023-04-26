@@ -16,6 +16,7 @@ pub struct Scan {
     pub keywords: Vec<String>,
     pub roots: Vec<String>,
     pub last_scan_time_stamp: Option<DateTime<Utc>>,
+    pub case_sensitive: bool,
 }
 
 #[derive(serde::Serialize)]
@@ -32,6 +33,7 @@ impl Scan {
         roots: Vec<String>,
         last_scan_time_stamp: Option<DateTime<Utc>>,
         output_dir: PathBuf,
+        case_sensitive: bool,
     ) -> Self {
         let time_stamp = Utc::now();
         let scan = Self {
@@ -41,6 +43,7 @@ impl Scan {
             keywords,
             roots,
             last_scan_time_stamp,
+            case_sensitive,
         };
 
         for root in &scan.roots {
@@ -124,7 +127,7 @@ impl Scan {
         }
 
         let root = root.to_string();
-        let patterns = Arc::new(load_regex(&self.keywords));
+        let patterns = Arc::new(load_regex(&self.keywords, self.case_sensitive));
         let root = PathBuf::from(&root);
         let walk = WalkDir::new(&root);
 
@@ -206,12 +209,14 @@ impl Scan {
     }
 }
 
-fn load_regex(keywords: &Vec<String>) -> Vec<Regex> {
+fn load_regex(keywords: &Vec<String>, case_sensitive: bool) -> Vec<Regex> {
     keywords
         .iter()
         .map(|kw| {
             let mut kw = kw.clone();
-            kw = "(?i)".to_owned() + &kw;
+            if !case_sensitive {
+                kw = "(?i)".to_owned() + &kw;
+            }
             Regex::new(&kw).unwrap()
         })
         .collect()

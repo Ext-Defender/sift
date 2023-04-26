@@ -28,6 +28,7 @@ pub struct Config {
     output_directory: Option<String>,
     print_settings: bool,
     reset_settings: bool,
+    case_sensitive: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -187,6 +188,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 app_settings.roots.clone(),
                 None,
                 PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
+                config.case_sensitive,
             );
             app_settings.time_last_scan = scan.time_stamp.to_string();
 
@@ -200,6 +202,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 app_settings.roots.clone(),
                 None,
                 PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
+                config.case_sensitive,
             );
             app_settings.time_last_scan = scan.time_stamp.to_string();
         } else {
@@ -211,6 +214,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 app_settings.roots.clone(),
                 Some(last_scan_time),
                 PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
+                config.case_sensitive,
             );
             app_settings.time_last_scan = scan.time_stamp.to_string();
         }
@@ -309,6 +313,12 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
                 .action(ArgAction::SetTrue)
                 .help("Resets the config file to default (only way to reset password)"),
         )
+        .arg(
+            Arg::new("case-sensitive")
+                .short('i')
+                .help("Makes scan case-sensitive")
+                .action(ArgAction::SetTrue),
+        )
         .get_matches();
 
     Ok(Config {
@@ -339,6 +349,7 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         },
         print_settings: matches.get_flag("print_settings"),
         reset_settings: matches.get_flag("reset_config"),
+        case_sensitive: matches.get_flag("case-sensitive"),
     })
 }
 
