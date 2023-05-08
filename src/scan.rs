@@ -2,8 +2,13 @@ use crate::file_handler;
 use chrono::prelude::*;
 use csv::WriterBuilder;
 use jwalk::WalkDir;
+use log::LevelFilter;
+use log4rs::append::file::FileAppender;
+use log4rs::config::{Appender, Config, Root};
+use log4rs::encode::pattern::PatternEncoder;
 use regex::Regex;
 use std::error::Error;
+// use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -46,10 +51,22 @@ impl Scan {
             case_sensitive,
         };
 
+        let logfile = FileAppender::builder()
+            .encoder(Box::new(PatternEncoder::new("{d} : {l} - {m}\n")))
+            .build(format!("{}/scan.log", output_dir.to_str().unwrap()))
+            .unwrap();
+        let config = Config::builder()
+            .appender(Appender::builder().build("logfile", Box::new(logfile)))
+            .build(Root::builder().appender("logfile").build(LevelFilter::Info))
+            .unwrap();
+        log4rs::init_config(config).unwrap();
+
         for root in &scan.roots {
+            log::info!("Scan started on {root}");
             match scan.scan(&root, last_scan_time_stamp, full_scan) {
                 Ok(result) => {
                     println!("'{root}' scan complete");
+                    log::info!("Scan completed on {root}");
 
                     match result {
                         Some(findings) => {
@@ -74,7 +91,10 @@ impl Scan {
                                 Ok(_) => {
                                     println!("Output file created: {}", output_filename.display())
                                 }
-                                Err(e) => eprintln!("{e}"),
+                                Err(e) => {
+                                    eprintln!("{e}");
+                                    log::error!("Failed to write to file: {e}");
+                                }
                             }
 
                             let mut writer = WriterBuilder::new()
@@ -92,7 +112,6 @@ impl Scan {
                                 }
                                 words = words.trim().to_string();
                                 words = words.trim_end_matches(",").to_string();
-                                // words = words.replace(" ", " | ");
                                 writer
                                     .serialize(Row {
                                         keywords: words,
@@ -103,10 +122,16 @@ impl Scan {
 
                             println!("\n\nFinished writing: {}\n\n", Utc::now());
                         }
-                        None => println!("INFO: No findings"),
+                        None => {
+                            println!("INFO: No findings");
+                            log::info!("No findings in {root}");
+                        }
                     }
                 }
-                Err(e) => println!("!'{root}' scan failed with error {e}"),
+                Err(e) => {
+                    eprintln!("!'{root}' scan failed with error {e}");
+                    log::error!("Scan on {root} failed: {e}");
+                }
             }
         }
 
@@ -152,9 +177,15 @@ impl Scan {
             let scan_file: bool = match file_meta.metadata() {
                 Ok(meta) => match meta.modified() {
                     Ok(modified) => last_time_stamp.le(&modified),
-                    Err(_) => true,
+                    Err(e) => {
+                        log::info!("Failed to get modified date: {e}");
+                        true
+                    }
                 },
-                Err(_) => true,
+                Err(e) => {
+                    log::info!("Failed to get metadata: {e}");
+                    true
+                }
             };
 
             let patterns = Arc::new(patterns.clone());

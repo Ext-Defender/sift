@@ -30,9 +30,6 @@ pub fn scan_pdf(
             }
             _ => (),
         }
-        // if pattern.is_match(&content) {
-        //     findings.push(pattern.to_string());
-        // }
     }
     if findings.len() > 0 {
         return Ok(Some((findings, path.to_str().unwrap().to_string())));
@@ -69,14 +66,10 @@ pub fn scan_ooxml(
                                     if !findings.contains(&finding) {
                                         findings.push(finding);
                                     }
-                                    // println!("{}", finding.unwrap().as_str());
                                 }
                             }
                             _ => (),
                         }
-                        // if pattern.is_match(&c) && !findings.contains(&pattern.to_string()) {
-                        //     findings.push(pattern.to_string());
-                        // }
                     }
                 }
                 _ => continue,
@@ -124,9 +117,6 @@ pub fn scan_legacy_office(
             }
             _ => (),
         }
-        // if keyword.is_match(&contents) {
-        //     findings.push(keyword.to_string())
-        // }
     }
 
     if findings.len() > 0 {
@@ -157,9 +147,6 @@ pub fn scan_txt(
             }
             _ => (),
         }
-        // if keyword.is_match(&contents) {
-        //     findings.push(keyword.to_string())
-        // }
     }
     if findings.len() > 0 {
         return Ok(Some((findings, path.to_str().unwrap().to_string())));
@@ -189,9 +176,6 @@ pub fn scan_rtf(
             }
             _ => (),
         }
-        // if keyword.is_match(&buf) {
-        //     findings.push(keyword.to_string())
-        // }
     }
 
     if findings.len() > 0 {
@@ -200,7 +184,3 @@ pub fn scan_rtf(
 
     Ok(None)
 }
-
-// pub fn scan_wpd(path: PathBuf, keyword_patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
-//     todo!();
-// }

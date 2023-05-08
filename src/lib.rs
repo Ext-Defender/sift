@@ -13,7 +13,6 @@ mod encryption;
 pub mod file_handler;
 mod scan;
 
-//test
 #[derive(Debug)]
 pub struct Config {
     scan: bool,
@@ -60,7 +59,6 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         confy::store("sift", None, Settings::default())?;
     }
 
-    // dbg!(&config);
     let mut app_settings: Settings = confy::load("sift", None)?;
 
     let key = "SIFTPW";
@@ -191,8 +189,6 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 config.case_sensitive,
             );
             app_settings.time_last_scan = scan.time_stamp.to_string();
-
-            // println!("{:?}", scan);
         } else if app_settings.initial_scan {
             app_settings.initial_scan = false;
             let scan = scan::Scan::new(
