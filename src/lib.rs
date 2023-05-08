@@ -235,7 +235,7 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         )
         .arg(
             Arg::new("full_scan")
-                .short('f')
+                .short('S')
                 .help("conducts full scan of directory")
                 .action(ArgAction::SetTrue),
         )
@@ -253,7 +253,7 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         )
         .arg(
             Arg::new("remove_root")
-                .short('d')
+                .short('R')
                 .help("remove a directory from search")
                 .action(ArgAction::Append),
         )
@@ -273,7 +273,7 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         )
         .arg(
             Arg::new("remove_keyword")
-                .short('c')
+                .short('A')
                 .value_name("keywords_to_remove")
                 .help("removes keyword from database"),
         )
