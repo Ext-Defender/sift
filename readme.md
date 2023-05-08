@@ -22,6 +22,17 @@ This will run a scan of my <i>D</i> drive looking for the pattern <i>test</i> an
 ```console
 .\sift.exe -a test -o C:\test -r D:\ -s
 ```
+
+### Multi-word pattern
+```console
+.\sift.exe -a "hello there"
+```
+
+### Social Security Number
+```console
+.\sift.exe -a "\d\d\d-\d\d-\d\d\d\d"
+```
+
 ## Flags
 
 |flag| Description|
