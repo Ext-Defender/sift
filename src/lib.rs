@@ -25,6 +25,7 @@ pub struct Config {
     remove_keywords: Option<Vec<String>>,
     display_keywords: bool,
     output_directory: Option<String>,
+    print_output_directory: bool,
     print_settings: bool,
     reset_settings: bool,
     case_sensitive: bool,
@@ -146,6 +147,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         );
         app_settings.initial_scan = true;
         app_settings.output_directory = config.output_directory;
+    }
+
+    if config.print_output_directory {
+        println!("{:?}", app_settings.output_directory);
     }
 
     confy::store("sift", None, &app_settings)?;
@@ -294,7 +299,8 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         .arg(
             Arg::new("print_output_directory")
                 .short('l')
-                .help("prints the output directory path"),
+                .help("prints the output directory path")
+                .action(ArgAction::SetTrue),
         )
         .arg(
             Arg::new("print_settings")
@@ -343,6 +349,7 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
             Some(c) => Some(c.clone()),
             None => None,
         },
+        print_output_directory: matches.get_flag("print_output_directory"),
         print_settings: matches.get_flag("print_settings"),
         reset_settings: matches.get_flag("reset_config"),
         case_sensitive: matches.get_flag("case-sensitive"),
