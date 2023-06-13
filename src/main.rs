@@ -1,5 +1,7 @@
+use sift::config::get_args;
+use sift::run::run;
 fn main() {
-    if let Err(e) = sift::get_args().and_then(sift::run) {
+    if let Err(e) = get_args().and_then(run) {
         eprintln!("{}", e);
         std::process::exit(1);
     }
