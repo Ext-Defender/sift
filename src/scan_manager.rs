@@ -7,6 +7,7 @@ use crate::csv_writer::writer;
 use crate::scan_settings::ScanSettings;
 use crate::scanner::scan;
 use crate::sift::ScanMessage;
+
 use crossbeam::channel::unbounded;
 use jwalk::WalkDir;
 use regex::Regex;
@@ -32,20 +33,34 @@ pub fn scan_manager(scan_settings: ScanSettings) {
     for root in scan_settings.roots {
         let output_dir = scan_settings.output_dir.clone();
         let patterns = patterns.clone();
+
+        println!("Starting scan: {}", root);
+
         let handle = thread::spawn(move || {
             let (tx, rx) = unbounded::<ScanMessage>();
             let root_path = PathBuf::from(&root);
             let dir_walk = WalkDir::new(root_path);
             writer(output_dir, &root, rx);
-            scan(dir_walk, tx.clone(), patterns, last_time_stamp).unwrap();
-            if scan_settings.verbose {
-                println!("Scan complete: {root}");
+            match scan(
+                dir_walk,
+                tx.clone(),
+                patterns,
+                last_time_stamp,
+                scan_settings.verbose,
+            ) {
+                Ok(_) => (),
+                Err(e) => eprintln!("{:?} panic at {}", e, root),
             }
+
+            println!("Scan complete: {root}");
         });
         handles.push(handle);
     }
     for handle in handles {
-        handle.join().unwrap();
+        match handle.join() {
+            Ok(_) => (),
+            Err(e) => eprintln!("{:?}", e),
+        };
     }
 }
 

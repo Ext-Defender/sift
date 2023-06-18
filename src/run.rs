@@ -10,7 +10,6 @@ use std::str::from_utf8;
 
 use crate::config::Config;
 use crate::encryption;
-// use crate::scan::Scan;`
 use crate::settings::ConfigFile;
 
 use crate::scan_manager::scan_manager;
@@ -156,10 +155,20 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     if config.scan || config.full_scan {
+        let full_scan: bool;
+        if app_settings.initial_scan {
+            println!("Conducting initial scan.");
+            full_scan = true;
+        } else {
+            full_scan = config.full_scan;
+        }
         app_settings.initial_scan = false;
-        let last_scan_time: DateTime<Utc> = app_settings.time_last_scan.parse().unwrap();
+        let last_scan_time: DateTime<Utc> = match app_settings.time_last_scan.parse() {
+            Ok(t) => t,
+            Err(_) => Utc::now(),
+        };
         let scan_settings = ScanSettings::new(
-            config.full_scan,
+            full_scan,
             config.verbose,
             keywords,
             app_settings.roots.clone(),
