@@ -10,11 +10,8 @@ use std::str::from_utf8;
 
 use crate::config::Config;
 use crate::encryption;
-// use crate::scan::Scan;`
+use crate::scan::Scan;
 use crate::settings::ConfigFile;
-
-use crate::scan_manager::scan_manager;
-use crate::scan_settings::ScanSettings;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     if config.reset_settings {
@@ -156,19 +153,43 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     }
 
     if config.scan || config.full_scan {
-        app_settings.initial_scan = false;
-        let last_scan_time: DateTime<Utc> = app_settings.time_last_scan.parse().unwrap();
-        let scan_settings = ScanSettings::new(
-            config.full_scan,
-            config.verbose,
-            keywords,
-            app_settings.roots.clone(),
-            Some(last_scan_time),
-            PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
-            config.case_sensitive,
-        );
-        app_settings.time_last_scan = Utc::now().to_string();
-        scan_manager(scan_settings);
+        if config.full_scan {
+            app_settings.initial_scan = false;
+            let scan = Scan::new(
+                config.full_scan,
+                config.verbose,
+                keywords.clone(),
+                app_settings.roots.clone(),
+                None,
+                PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
+                config.case_sensitive,
+            );
+            app_settings.time_last_scan = scan.time_stamp.to_string();
+        } else if app_settings.initial_scan {
+            app_settings.initial_scan = false;
+            let scan = Scan::new(
+                true,
+                config.verbose,
+                keywords.clone(),
+                app_settings.roots.clone(),
+                None,
+                PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
+                config.case_sensitive,
+            );
+            app_settings.time_last_scan = scan.time_stamp.to_string();
+        } else {
+            let last_scan_time: DateTime<Utc> = app_settings.time_last_scan.parse().unwrap();
+            let scan = Scan::new(
+                false,
+                config.verbose,
+                keywords.clone(),
+                app_settings.roots.clone(),
+                Some(last_scan_time),
+                PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
+                config.case_sensitive,
+            );
+            app_settings.time_last_scan = scan.time_stamp.to_string();
+        }
     }
 
     confy::store("sift", None, &app_settings)?;

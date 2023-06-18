@@ -8,7 +8,6 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use regex::Regex;
 use std::error::Error;
-// use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -171,6 +170,7 @@ impl Scan {
         if !self.verbose {
             println!("Scanning {:?}... ", root);
         }
+
         for obj in walk.into_iter() {
             let file_meta = obj?;
             let path = file_meta.path();
@@ -188,7 +188,7 @@ impl Scan {
                 }
             };
 
-            let patterns = Arc::new(patterns.clone());
+            let patterns = patterns.clone();
 
             if scan_file {
                 if self.verbose {
@@ -215,7 +215,6 @@ impl Scan {
                     };
                     ret
                 });
-
                 threads.push(thr);
             }
         }
