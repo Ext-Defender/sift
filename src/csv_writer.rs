@@ -1,7 +1,7 @@
 /* TODO: csv writer that works on an independent thread and consumes
 output from scanner threads
 limits lines written to less that 76,000 by openning a new file once match is reached. */
-use chrono::{Timelike, Utc};
+use chrono::{Datelike, Timelike, Utc};
 use crossbeam::channel::Receiver;
 use csv::{Writer, WriterBuilder};
 use std::collections::VecDeque;
@@ -21,7 +21,7 @@ use crate::sift::ScanMessage::{Msg, END};
 ///
 /// * 'rx' - crossbeam receiver that receives thread_message enum.
 pub fn writer(output_path: PathBuf, root: &String, rx: Receiver<ScanMessage>) {
-    let max_lines = u16::MAX;
+    let max_lines: u16 = 10000;
     let mut written_lines: u16 = 0;
     let mut file_suffix: u32 = 1;
 
@@ -33,7 +33,15 @@ pub fn writer(output_path: PathBuf, root: &String, rx: Receiver<ScanMessage>) {
     // Create timestamp
     let now = Utc::now();
     let hour = now.hour();
-    let timestamp = format!("{:02}-{:02}-{:02}", hour, now.minute(), now.second());
+    let timestamp = format!(
+        "{:02}-{:02}-{:02}utc_{}{}{}",
+        hour,
+        now.minute(),
+        now.second(),
+        now.month(),
+        now.day(),
+        now.year()
+    );
 
     // Make root safe to be in filename
     let root = root.replace("\\", "").replace(":", "").replace("/", "");
@@ -57,21 +65,18 @@ pub fn writer(output_path: PathBuf, root: &String, rx: Receiver<ScanMessage>) {
         }
         match rx.try_recv() {
             Ok(m) => queue.push_back(m),
-            // match m {
-            // Msg(row) => {
-            //     queue.push(row);
-            //     // writer.serialize(row).unwrap();
-            //     written_lines += 1;
-            // }
-            // END => {
-            //     queue.push()
-            // },
             Err(_) => (),
         }
         if !queue.is_empty() {
             match queue.pop_front().unwrap() {
-                Msg(r) => writer.serialize(r).unwrap(),
-                END => break,
+                Msg(r) => {
+                    written_lines += 1;
+                    writer.serialize(r).unwrap()
+                }
+                END => {
+                    println!("Close message recieved: Writer closed");
+                    break;
+                }
             }
         }
     });
@@ -91,6 +96,6 @@ fn update_filename(
     file_suffix: u32,
 ) -> PathBuf {
     let mut updated_filename = file_path.clone();
-    updated_filename.push(format!("{root}_{timestamp}-{file_suffix}.csv"));
+    updated_filename.push(format!("{root}_{timestamp}_{file_suffix}.csv"));
     updated_filename
 }

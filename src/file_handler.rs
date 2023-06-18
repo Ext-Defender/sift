@@ -1,3 +1,4 @@
+use msg_parser::Outlook;
 use pdf_extract;
 use regex::Regex;
 use std::error::Error;
@@ -8,6 +9,29 @@ use std::path::PathBuf;
 use zip;
 
 use xml::reader::EventReader;
+
+pub fn scan_msg(path: &PathBuf, keyword_patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
+    let mut findings: Vec<String> = Vec::new();
+    let content = match Outlook::from_path(path) {
+        Ok(c) => c,
+        Err(_) => return None,
+    };
+    let content = content.to_json();
+    for pattern in keyword_patterns {
+        match pattern.captures(content.as_ref().unwrap()) {
+            Some(cap) => {
+                for finding in cap.iter() {
+                    let finding = finding.unwrap().as_str().to_string();
+                    if !findings.contains(&finding) {
+                        findings.push(finding);
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+    Some((findings, path.to_str().unwrap().to_string()))
+}
 
 pub fn scan_pdf(
     path: &PathBuf,

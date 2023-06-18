@@ -23,6 +23,7 @@ pub fn scan(
     tx: Sender<ScanMessage>,
     patterns: Arc<Vec<Regex>>,
     last_timestamp: SystemTime,
+    verbose: bool,
 ) -> Result<(), Box<dyn Error>> {
     let mut handles: Vec<JoinHandle<()>> = Vec::new();
     for dir_result in dir_walk.into_iter() {
@@ -40,6 +41,11 @@ pub fn scan(
 
         if scan_file {
             let file_name = dir_entry.file_name().to_string_lossy().to_string();
+
+            if verbose {
+                println!("Attempting to scan: {}", file_name);
+            }
+
             let handle = thread::spawn(move || {
                 let findings = match path.extension() {
                     Some(ext) => match ext.to_str() {
@@ -61,6 +67,9 @@ pub fn scan(
                 };
 
                 if findings.is_some() {
+                    if verbose {
+                        println!("Findings in {}", file_name);
+                    }
                     let findings = findings_to_string(findings.unwrap().0);
                     match current_tx.send(Msg(Row {
                         findings: findings.clone(),
@@ -85,7 +94,10 @@ pub fn scan(
             Err(_) => (),
         }
     }
-    tx.send(END).unwrap();
+    match tx.send(END) {
+        Ok(_) => println!("Writer close message sent successfully"),
+        Err(e) => eprintln!("{}", e),
+    };
 
     Ok(())
 }
