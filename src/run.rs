@@ -3,10 +3,11 @@ use chrono::prelude::*;
 use clap::{value_parser, Arg, ArgAction, Command};
 use confy;
 use rpassword;
-use std::env;
 use std::error::Error;
-use std::path::PathBuf;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::str::from_utf8;
+use std::{env, fs};
 
 use crate::config::Config;
 use crate::encryption;
@@ -36,7 +37,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         println!("adding roots: {:?}", config.root);
         app_settings.initial_scan = true;
         for root in config.root.unwrap() {
-            if !app_settings.roots.contains(&root) {
+            if !app_settings.roots.contains(&root) && Path::new(&root).exists() {
                 app_settings.roots.push(root);
             } else {
                 println!("!'{}' already in root list", root);
@@ -67,6 +68,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         || config.full_scan
         || config.remove_keywords.is_some()
         || config.add_keywords.is_some()
+        || config.pattern_file.is_some()
     {
         if password.is_empty() {
             password = match app_settings.secret {
@@ -94,12 +96,29 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     if config.add_keywords.is_some() {
         let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
         println!("adding keywords: {:?}", config.add_keywords);
-        app_settings.initial_scan = true;
         for word in config.add_keywords.unwrap() {
             if !keywords.contains(&word) {
                 app_settings
                     .keywords
                     .push(encryption::encrypt(word.as_bytes(), &password));
+                app_settings.initial_scan = true;
+            }
+        }
+    }
+
+    if config.pattern_file.is_some() {
+        let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
+        let mut file = fs::File::open(config.pattern_file.unwrap()).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        let patterns = contents.split(",");
+        for pattern in patterns {
+            println!("adding keyword: {}", pattern);
+            let pattern = pattern.to_string();
+            if !keywords.contains(&pattern) {
+                app_settings
+                    .keywords
+                    .push(encryption::encrypt(pattern.as_bytes(), &password));
                 app_settings.initial_scan = true;
             }
         }
