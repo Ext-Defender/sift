@@ -1,6 +1,3 @@
-/* TODO: csv writer that works on an independent thread and consumes
-output from scanner threads
-limits lines written to less that 76,000 by openning a new file once match is reached. */
 use chrono::{Datelike, Timelike, Utc};
 use crossbeam::channel::Receiver;
 use csv::{Writer, WriterBuilder};
@@ -20,6 +17,8 @@ use crate::sift::ScanMessage::{Msg, END};
 /// # Arguments
 ///
 /// * 'rx' - crossbeam receiver that receives thread_message enum.
+/// * "root" - the starting point for the scan.
+/// * "output_path" - the designated output directory for the csv files.
 pub fn writer(output_path: PathBuf, root: &String, rx: Receiver<ScanMessage>) {
     let max_lines: u16 = 10000;
     let mut written_lines: u16 = 0;
@@ -74,7 +73,7 @@ pub fn writer(output_path: PathBuf, root: &String, rx: Receiver<ScanMessage>) {
                     writer.serialize(r).unwrap()
                 }
                 END => {
-                    println!("Close message recieved: Writer closed");
+                    println!("Close message received: Writer closed");
                     break;
                 }
             }

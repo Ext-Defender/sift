@@ -17,6 +17,7 @@ pub struct Config {
     pub print_settings: bool,
     pub reset_settings: bool,
     pub case_sensitive: bool,
+    pub pattern_file: Option<String>,
 }
 
 pub fn get_args() -> Result<Config, Box<dyn Error>> {
@@ -114,6 +115,11 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
                 .help("Makes scan case-sensitive: scans are not case-sensitive by default.")
                 .action(ArgAction::SetTrue),
         )
+        .arg(
+            Arg::new("pattern_file")
+                .short('f')
+                .help("provide a path to a text file containing patterns (comma separated)"),
+        )
         .get_matches();
 
     Ok(Config {
@@ -146,5 +152,9 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         print_settings: matches.get_flag("print_settings"),
         reset_settings: matches.get_flag("reset_config"),
         case_sensitive: matches.get_flag("case-sensitive"),
+        pattern_file: match matches.get_one::<String>("pattern_file") {
+            Some(pf) => Some(pf.to_string()),
+            None => None,
+        },
     })
 }

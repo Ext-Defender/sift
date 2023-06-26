@@ -1,6 +1,3 @@
-/*TODO: scanner function built to work as an independent thread that helps to consume a
-central iterator available to multiple scanners */
-
 use std::thread::JoinHandle;
 use std::{error::Error, sync::Arc, thread, time::SystemTime};
 
@@ -46,44 +43,48 @@ pub fn scan(
                 println!("Attempting to scan: {}", file_name);
             }
 
-            let handle = thread::spawn(move || {
-                let findings = match path.extension() {
-                    Some(ext) => match ext.to_str() {
-                        Some("pdf") => file_handler::scan_pdf(&path, &patterns).unwrap_or(None),
-                        Some("xlsx") | Some("pptx") | Some("docx") => {
-                            file_handler::scan_ooxml(&path, &patterns).unwrap_or(None)
-                        }
-                        Some("txt") | Some("xml") | Some("html") | Some("htm") => {
-                            file_handler::scan_txt(&path, &patterns).unwrap_or(None)
-                        }
-                        Some("rtf") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
-                        Some("wpd") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
-                        Some("doc") | Some("ppt") | Some("xls") => {
-                            file_handler::scan_legacy_office(&path, &patterns).unwrap_or(None)
-                        }
+            let handle = thread::Builder::new()
+                .name(format!("{}", dir_entry.path().to_string_lossy()))
+                .spawn(move || {
+                    let findings = match path.extension() {
+                        Some(ext) => match ext.to_str() {
+                            Some("pdf") => file_handler::scan_pdf(&path, &patterns).unwrap_or(None),
+                            Some("xlsx") | Some("pptx") | Some("docx") => {
+                                file_handler::scan_ooxml(&path, &patterns).unwrap_or(None)
+                            }
+                            Some("txt") | Some("xml") | Some("html") | Some("htm") => {
+                                file_handler::scan_txt(&path, &patterns).unwrap_or(None)
+                            }
+                            Some("rtf") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
+                            Some("wpd") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
+                            Some("doc") | Some("ppt") | Some("xls") => {
+                                file_handler::scan_legacy_office(&path, &patterns).unwrap_or(None)
+                            }
+                            Some("msg") => file_handler::scan_msg(&path, &patterns),
+                            _ => None,
+                        },
                         _ => None,
-                    },
-                    _ => None,
-                };
+                    };
 
-                if findings.is_some() {
-                    if verbose {
-                        println!("Findings in {}", file_name);
-                    }
-                    let findings = findings_to_string(findings.unwrap().0);
-                    match current_tx.send(Msg(Row {
-                        findings: findings.clone(),
-                        filename: file_name,
-                        path: path.to_string_lossy().to_string(),
-                    })) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("{}: didn't get sent.", findings);
-                            eprintln!("{}", e);
+                    if findings.is_some() {
+                        if verbose {
+                            println!("Findings in {}", file_name);
+                        }
+                        let findings = findings_to_string(findings.unwrap().0);
+                        match current_tx.send(Msg(Row {
+                            findings: findings.clone(),
+                            filename: file_name,
+                            path: path.to_string_lossy().to_string(),
+                        })) {
+                            Ok(_) => (),
+                            Err(e) => {
+                                println!("{}: didn't get sent.", findings);
+                                eprintln!("{}", e);
+                            }
                         }
                     }
-                }
-            });
+                })
+                .unwrap();
             handles.push(handle);
         }
     }
