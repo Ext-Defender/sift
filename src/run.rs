@@ -111,7 +111,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         let mut file = fs::File::open(config.pattern_file.unwrap()).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let patterns = contents.split(",");
+        let patterns: Vec<&str> = contents.split(|c| c == ',' || c == '\n').collect();
         for pattern in patterns {
             println!("adding keyword: {}", pattern);
             let pattern = pattern.to_string();
