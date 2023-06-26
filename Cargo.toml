@@ -1,6 +1,6 @@
 [package]
 name = "sift"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Bryan Vinton"]
 edition = "2021"
 
@@ -30,3 +30,5 @@ csv = "1.2.1"
 # rayon = "1.7.0"
 log = "0.4.17"
 log4rs = "1.2.0"
+crossbeam-channel = "0.5.8"
+msg_parser = "0.1.1"
