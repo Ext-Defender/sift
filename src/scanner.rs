@@ -52,7 +52,8 @@ pub fn scan(
                             Some("xlsx") | Some("pptx") | Some("docx") => {
                                 file_handler::scan_ooxml(&path, &patterns).unwrap_or(None)
                             }
-                            Some("txt") | Some("xml") | Some("html") | Some("htm") => {
+                            Some("txt") | Some("xml") | Some("html") | Some("htm")
+                            | Some("csv") => {
                                 file_handler::scan_txt(&path, &patterns).unwrap_or(None)
                             }
                             Some("rtf") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
