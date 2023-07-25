@@ -46,26 +46,7 @@ pub fn scan(
             let handle = thread::Builder::new()
                 .name(format!("{}", dir_entry.path().to_string_lossy()))
                 .spawn(move || {
-                    let findings = match path.extension() {
-                        Some(ext) => match ext.to_str() {
-                            Some("pdf") => file_handler::scan_pdf(&path, &patterns).unwrap_or(None),
-                            Some("xlsx") | Some("pptx") | Some("docx") => {
-                                file_handler::scan_ooxml(&path, &patterns).unwrap_or(None)
-                            }
-                            Some("txt") | Some("xml") | Some("html") | Some("htm")
-                            | Some("csv") => {
-                                file_handler::scan_txt(&path, &patterns).unwrap_or(None)
-                            }
-                            Some("rtf") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
-                            Some("wpd") => file_handler::scan_rtf(&path, &patterns).unwrap_or(None),
-                            Some("doc") | Some("ppt") | Some("xls") => {
-                                file_handler::scan_legacy_office(&path, &patterns).unwrap_or(None)
-                            }
-                            Some("msg") => file_handler::scan_msg(&path, &patterns),
-                            _ => None,
-                        },
-                        _ => None,
-                    };
+                    let findings = file_handler::scan_file(&path, &patterns);
 
                     if findings.is_some() {
                         if verbose {
