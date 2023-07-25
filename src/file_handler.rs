@@ -9,9 +9,6 @@ use zip;
 
 use xml::reader::EventReader;
 
-//testing
-// use std::time::Instant;
-
 pub fn scan_file(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
     let ret = match path.extension() {
         Some(ext) => match ext.to_str() {
@@ -74,7 +71,6 @@ fn scan_pdf(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, Strin
                 texts.push_str(&text.unwrap_or_default());
             }
 
-            // println!("Text: {}", texts);
             texts
         }
         Err(_) => return None,
