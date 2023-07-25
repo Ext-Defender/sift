@@ -43,6 +43,8 @@ pub fn scan_manager(scan_settings: ScanSettings) {
         let root_clone = root.clone();
         println!("Starting scan: {}", root);
 
+        let instant = std::time::Instant::now();
+
         let handle = thread::spawn(move || {
             let (tx, rx) = unbounded::<ScanMessage>();
             let root_path = PathBuf::from(&root);
@@ -69,6 +71,7 @@ pub fn scan_manager(scan_settings: ScanSettings) {
                 now = std::time::Instant::now();
             }
         }
+        println!("{root_clone} scan completed: {:.2?}", instant.elapsed());
         match handle.join() {
             Ok(_) => (),
             Err(e) => eprintln!("{:?}", e),

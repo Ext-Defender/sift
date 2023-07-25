@@ -97,34 +97,6 @@ fn scan_pdf(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, Strin
     Some((findings, path.to_str().unwrap().to_string()))
 }
 
-// fn scan_pdf(
-//     path: &PathBuf,
-//     patterns: &Vec<Regex>,
-// ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
-//     let mut findings: Vec<String> = vec![];
-//     let content = match pdf_extract::extract_text(&path) {
-//         Ok(c) => c,
-//         Err(_) => return Ok(None),
-//     };
-//     for pattern in patterns.iter() {
-//         match pattern.captures(&content) {
-//             Some(cap) => {
-//                 for finding in cap.iter() {
-//                     let finding = finding.unwrap().as_str().to_string();
-//                     if !findings.contains(&finding) {
-//                         findings.push(finding);
-//                     }
-//                 }
-//             }
-//             _ => (),
-//         }
-//     }
-//     if findings.len() > 0 {
-//         return Ok(Some((findings, path.to_str().unwrap().to_string())));
-//     }
-//     Ok(None)
-// }
-
 fn scan_ooxml(
     path: &PathBuf,
     patterns: &Vec<Regex>,

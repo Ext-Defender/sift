@@ -7,6 +7,7 @@ use crate::{file_handler, sift::Row};
 use crossbeam::channel::Sender;
 use jwalk::WalkDirGeneric;
 use regex::Regex;
+
 /// Handles file routing for filetype scanning
 ///
 /// # Arguments
