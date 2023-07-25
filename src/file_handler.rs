@@ -33,14 +33,14 @@ pub fn scan_file(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, 
     ret
 }
 
-pub fn scan_msg(path: &PathBuf, keyword_patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
+pub fn scan_msg(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
     let mut findings: Vec<String> = Vec::new();
     let content = match Outlook::from_path(path) {
         Ok(c) => c,
         Err(_) => return None,
     };
     let content = content.to_json();
-    for pattern in keyword_patterns {
+    for pattern in patterns {
         match pattern.captures(content.as_ref().unwrap()) {
             Some(cap) => {
                 for finding in cap.iter() {
@@ -58,14 +58,14 @@ pub fn scan_msg(path: &PathBuf, keyword_patterns: &Vec<Regex>) -> Option<(Vec<St
 
 pub fn scan_pdf(
     path: &PathBuf,
-    keyword_patterns: &Vec<Regex>,
+    patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
     let mut findings: Vec<String> = vec![];
     let content = match pdf_extract::extract_text(&path) {
         Ok(c) => c,
         Err(_) => return Ok(None),
     };
-    for pattern in keyword_patterns.iter() {
+    for pattern in patterns.iter() {
         match pattern.captures(&content) {
             Some(cap) => {
                 for finding in cap.iter() {
@@ -86,7 +86,7 @@ pub fn scan_pdf(
 
 pub fn scan_ooxml(
     path: &PathBuf,
-    keyword_patterns: &Vec<Regex>,
+    patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
     let mut findings = vec![];
     let file = fs::File::open(path).unwrap();
@@ -105,7 +105,7 @@ pub fn scan_ooxml(
         for event in parser {
             match event {
                 Ok(xml::reader::XmlEvent::Characters(c)) => {
-                    for pattern in keyword_patterns.iter() {
+                    for pattern in patterns.iter() {
                         match pattern.captures(&c) {
                             Some(cap) => {
                                 for finding in cap.iter() {
@@ -133,7 +133,7 @@ pub fn scan_ooxml(
 
 pub fn scan_legacy_office(
     path: &PathBuf,
-    keyword_patterns: &Vec<Regex>,
+    patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
     let mut findings = vec![];
     let mut file = fs::File::open(path)?;
@@ -152,7 +152,7 @@ pub fn scan_legacy_office(
         }
     }
 
-    for pattern in keyword_patterns.iter() {
+    for pattern in patterns.iter() {
         match pattern.captures(&content) {
             Some(cap) => {
                 for finding in cap.iter() {
@@ -175,14 +175,14 @@ pub fn scan_legacy_office(
 
 pub fn scan_txt(
     path: &PathBuf,
-    keyword_patterns: &Vec<Regex>,
+    patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
     let mut findings: Vec<String> = vec![];
     let content = match fs::read_to_string(path) {
         Ok(c) => c,
         Err(_) => return Ok(None), //TODO log
     };
-    for pattern in keyword_patterns.iter() {
+    for pattern in patterns.iter() {
         match pattern.captures(&content) {
             Some(cap) => {
                 for finding in cap.iter() {
@@ -203,7 +203,7 @@ pub fn scan_txt(
 
 pub fn scan_rtf(
     path: &PathBuf,
-    keyword_patterns: &Vec<Regex>,
+    patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
     let mut findings = vec![];
     let file = fs::File::open(path)?;
@@ -211,7 +211,7 @@ pub fn scan_rtf(
     let mut buf = String::new();
     reader.read_to_string(&mut buf)?;
 
-    for pattern in keyword_patterns.iter() {
+    for pattern in patterns.iter() {
         match pattern.captures(&buf) {
             Some(cap) => {
                 for finding in cap.iter() {
