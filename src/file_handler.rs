@@ -1,5 +1,4 @@
 use msg_parser::Outlook;
-use pdf_extract;
 use regex::Regex;
 use std::error::Error;
 use std::fs;
@@ -10,10 +9,13 @@ use zip;
 
 use xml::reader::EventReader;
 
+//testing
+// use std::time::Instant;
+
 pub fn scan_file(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
     let ret = match path.extension() {
         Some(ext) => match ext.to_str() {
-            Some("pdf") => scan_pdf(&path, &patterns).unwrap_or(None),
+            Some("pdf") => scan_pdf(&path, &patterns),
             Some("xlsx") | Some("pptx") | Some("docx") => {
                 scan_ooxml(&path, &patterns).unwrap_or(None)
             }
@@ -33,7 +35,7 @@ pub fn scan_file(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, 
     ret
 }
 
-pub fn scan_msg(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
+fn scan_msg(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
     let mut findings: Vec<String> = Vec::new();
     let content = match Outlook::from_path(path) {
         Ok(c) => c,
@@ -56,15 +58,28 @@ pub fn scan_msg(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, S
     Some((findings, path.to_str().unwrap().to_string()))
 }
 
-pub fn scan_pdf(
-    path: &PathBuf,
-    patterns: &Vec<Regex>,
-) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
-    let mut findings: Vec<String> = vec![];
-    let content = match pdf_extract::extract_text(&path) {
-        Ok(c) => c,
-        Err(_) => return Ok(None),
+fn scan_pdf(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
+    use lopdf::Document;
+
+    let mut findings = Vec::new();
+
+    let content = match Document::load(path) {
+        Ok(doc) => {
+            let pages = doc.get_pages();
+            let mut texts = String::new();
+
+            for (i, _) in pages.iter().enumerate() {
+                let page_number = (i + 1) as u32;
+                let text = doc.extract_text(&[page_number]);
+                texts.push_str(&text.unwrap_or_default());
+            }
+
+            // println!("Text: {}", texts);
+            texts
+        }
+        Err(_) => return None,
     };
+
     for pattern in patterns.iter() {
         match pattern.captures(&content) {
             Some(cap) => {
@@ -78,13 +93,39 @@ pub fn scan_pdf(
             _ => (),
         }
     }
-    if findings.len() > 0 {
-        return Ok(Some((findings, path.to_str().unwrap().to_string())));
-    }
-    Ok(None)
+
+    Some((findings, path.to_str().unwrap().to_string()))
 }
 
-pub fn scan_ooxml(
+// fn scan_pdf(
+//     path: &PathBuf,
+//     patterns: &Vec<Regex>,
+// ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
+//     let mut findings: Vec<String> = vec![];
+//     let content = match pdf_extract::extract_text(&path) {
+//         Ok(c) => c,
+//         Err(_) => return Ok(None),
+//     };
+//     for pattern in patterns.iter() {
+//         match pattern.captures(&content) {
+//             Some(cap) => {
+//                 for finding in cap.iter() {
+//                     let finding = finding.unwrap().as_str().to_string();
+//                     if !findings.contains(&finding) {
+//                         findings.push(finding);
+//                     }
+//                 }
+//             }
+//             _ => (),
+//         }
+//     }
+//     if findings.len() > 0 {
+//         return Ok(Some((findings, path.to_str().unwrap().to_string())));
+//     }
+//     Ok(None)
+// }
+
+fn scan_ooxml(
     path: &PathBuf,
     patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
@@ -131,7 +172,7 @@ pub fn scan_ooxml(
     Ok(None)
 }
 
-pub fn scan_legacy_office(
+fn scan_legacy_office(
     path: &PathBuf,
     patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
@@ -173,7 +214,7 @@ pub fn scan_legacy_office(
     Ok(None)
 }
 
-pub fn scan_txt(
+fn scan_txt(
     path: &PathBuf,
     patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {
@@ -201,7 +242,7 @@ pub fn scan_txt(
     Ok(None)
 }
 
-pub fn scan_rtf(
+fn scan_rtf(
     path: &PathBuf,
     patterns: &Vec<Regex>,
 ) -> Result<Option<(Vec<String>, String)>, Box<dyn Error>> {

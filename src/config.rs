@@ -23,7 +23,7 @@ pub struct Config {
 pub fn get_args() -> Result<Config, Box<dyn Error>> {
     let matches = Command::new("sift")
         .author("Bryan Vinton, bryan.vinton18@gmail.com")
-        .version("0.2.0")
+        .version(env!("CARGO_PKG_VERSION"))
         .about("Searches for keywords in various document types")
         .arg(
             Arg::new("scan")
