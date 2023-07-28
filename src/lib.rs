@@ -1,4 +1,4 @@
-pub mod config;
+pub mod args;
 pub mod csv_writer;
 pub mod encryption;
 pub mod file_handler;

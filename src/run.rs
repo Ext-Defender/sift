@@ -9,14 +9,14 @@ use std::path::{Path, PathBuf};
 use std::str::from_utf8;
 use std::{env, fs};
 
-use crate::config::Config;
+use crate::args::Args;
 use crate::encryption;
 use crate::settings::ConfigFile;
 
 use crate::scan_manager::scan_manager;
 use crate::scan_settings::ScanSettings;
 
-pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     if config.reset_settings {
         println!("Clearing configs");
         confy::store("sift", None, ConfigFile::default())?;

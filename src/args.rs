@@ -2,7 +2,7 @@ use clap::{value_parser, Arg, ArgAction, Command};
 use std::error::Error;
 
 #[derive(Debug)]
-pub struct Config {
+pub struct Args {
     pub scan: bool,
     pub full_scan: bool,
     pub verbose: bool,
@@ -20,7 +20,7 @@ pub struct Config {
     pub pattern_file: Option<String>,
 }
 
-pub fn get_args() -> Result<Config, Box<dyn Error>> {
+pub fn get_args() -> Result<Args, Box<dyn Error>> {
     let matches = Command::new("sift")
         .author("Bryan Vinton, bryan.vinton18@gmail.com")
         .version(env!("CARGO_PKG_VERSION"))
@@ -122,7 +122,7 @@ pub fn get_args() -> Result<Config, Box<dyn Error>> {
         )
         .get_matches();
 
-    Ok(Config {
+    Ok(Args {
         scan: matches.get_flag("scan"),
         full_scan: matches.get_flag("full_scan"),
         verbose: matches.get_flag("verbose"),
