@@ -8,14 +8,8 @@ use crossbeam::channel::Sender;
 use jwalk::WalkDirGeneric;
 use regex::Regex;
 
-/// Handles file routing for filetype scanning
-///
-/// # Arguments
-///
-/// * 'dirWalk' - jwalk instance of WalkDir
-/// * 'tx' - crossbeam sender for transfering findings to csv writer thread
-/// * 'patterns' - Vec<Regex>
-/// * 'last_timestamp' - SystemTime
+const MAX_FILE_SCANS: usize = 5;
+
 pub fn scan(
     dir_walk: WalkDirGeneric<((), ())>,
     tx: Sender<ScanMessage>,
@@ -24,6 +18,9 @@ pub fn scan(
     verbose: bool,
 ) -> Result<(), Box<dyn Error>> {
     let mut handles: Vec<JoinHandle<()>> = Vec::new();
+
+    let mut now = std::time::Instant::now();
+
     for dir_result in dir_walk.into_iter() {
         let dir_entry = dir_result?;
         let path = dir_entry.path();
@@ -36,6 +33,11 @@ pub fn scan(
         };
         let patterns = patterns.clone();
         let current_tx = tx.clone();
+
+        if now.elapsed().as_secs() >= 30 {
+            println!("Scanning {}", dir_entry.parent_path().to_str().unwrap());
+            now = std::time::Instant::now();
+        }
 
         if scan_file {
             let file_name = dir_entry.file_name().to_string_lossy().to_string();
@@ -69,6 +71,10 @@ pub fn scan(
                 })
                 .unwrap();
             handles.push(handle);
+
+            while handles.len() == MAX_FILE_SCANS {
+                handles.retain(|h| !h.is_finished());
+            }
         }
     }
     println!("Sending writer termination.");

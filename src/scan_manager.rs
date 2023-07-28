@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::thread;
+use std::thread::{self, JoinHandle};
 use std::time::SystemTime;
 
 use crate::csv_writer::writer;
@@ -16,6 +16,8 @@ use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
 use regex::{Regex, RegexBuilder};
+
+const MAX_SCANS: usize = 2;
 
 pub fn scan_manager(scan_settings: ScanSettings) {
     build_logger(scan_settings.output_dir.clone());
@@ -35,14 +37,14 @@ pub fn scan_manager(scan_settings: ScanSettings) {
         scan_settings.case_sensitive,
     ));
 
-    // let mut handles: Vec<JoinHandle<()>> = Vec::new();
+    let instant = std::time::Instant::now();
+
+    let mut handles: Vec<JoinHandle<()>> = Vec::new();
     for root in scan_settings.roots {
         let output_dir = scan_settings.output_dir.clone();
         let patterns = patterns.clone();
-        let root_clone = root.clone();
+        // let root_clone = root.clone();
         println!("Starting scan: {}", root);
-
-        let instant = std::time::Instant::now();
 
         let handle = thread::spawn(move || {
             let (tx, rx) = unbounded::<ScanMessage>();
@@ -63,25 +65,20 @@ pub fn scan_manager(scan_settings: ScanSettings) {
             println!("Scan complete: {root}");
         });
 
-        let mut now = std::time::Instant::now();
-        while !handle.is_finished() {
-            if now.elapsed().as_secs() >= 30 {
-                println!("Scanning {}", root_clone);
-                now = std::time::Instant::now();
-            }
+        handles.push(handle);
+
+        while handles.len() == MAX_SCANS {
+            handles.retain(|h| !h.is_finished());
         }
-        println!("{root_clone} scan completed: {:.2?}", instant.elapsed());
+    }
+    for handle in handles {
         match handle.join() {
             Ok(_) => (),
             Err(e) => eprintln!("{:?}", e),
         };
     }
-    // for handle in handles {
-    //     match handle.join() {
-    //         Ok(_) => (),
-    //         Err(e) => eprintln!("{:?}", e),
-    //     };
-    // }
+
+    println!("Scans completed: {}", instant.elapsed().as_secs());
 }
 
 fn load_regex(keywords: Vec<String>, case_sensitive: bool) -> Vec<Regex> {
