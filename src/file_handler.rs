@@ -120,7 +120,6 @@ fn scan_ooxml(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, Str
 }
 
 fn scan_legacy_office(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
-    // let mut findings = vec![];
     let mut file = match fs::File::open(path) {
         Ok(f) => f,
         Err(e) => {
@@ -149,20 +148,6 @@ fn scan_legacy_office(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<Stri
         }
     }
 
-    // for pattern in patterns.iter() {
-    //     match pattern.captures(&content) {
-    //         Some(cap) => {
-    //             for finding in cap.iter() {
-    //                 let finding = finding.unwrap().as_str().to_string();
-    //                 if !findings.contains(&finding) {
-    //                     findings.push(finding);
-    //                 }
-    //             }
-    //         }
-    //         _ => (),
-    //     }
-    // }
-
     let findings = search_content(content, patterns);
 
     if findings.len() > 0 {
@@ -173,7 +158,6 @@ fn scan_legacy_office(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<Stri
 }
 
 fn scan_txt(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
-    // let mut findings: Vec<String> = vec![];
     let content = match fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
@@ -181,19 +165,6 @@ fn scan_txt(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, Strin
             return None;
         }
     };
-    // for pattern in patterns.iter() {
-    //     match pattern.captures(&content) {
-    //         Some(cap) => {
-    //             for finding in cap.iter() {
-    //                 let finding = finding.unwrap().as_str().to_string();
-    //                 if !findings.contains(&finding) {
-    //                     findings.push(finding);
-    //                 }
-    //             }
-    //         }
-    //         _ => (),
-    //     }
-    // }
 
     let findings = search_content(content, patterns);
 
@@ -205,7 +176,6 @@ fn scan_txt(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, Strin
 }
 
 fn scan_rtf(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
-    // let mut findings = vec![];
     let file = match fs::File::open(path) {
         Ok(f) => f,
         Err(e) => {
@@ -221,20 +191,6 @@ fn scan_rtf(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, Strin
             log::error!("ERROR processing rtf: {}", e);
         }
     }
-
-    // for pattern in patterns.iter() {
-    //     match pattern.captures(&buf) {
-    //         Some(cap) => {
-    //             for finding in cap.iter() {
-    //                 let finding = finding.unwrap().as_str().to_string();
-    //                 if !findings.contains(&finding) {
-    //                     findings.push(finding);
-    //                 }
-    //             }
-    //         }
-    //         _ => (),
-    //     }
-    // }
 
     let findings = search_content(content, patterns);
 
