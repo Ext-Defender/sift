@@ -15,7 +15,7 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
 
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 
 pub fn scan_manager(scan_settings: ScanSettings) {
     build_logger(scan_settings.output_dir.clone());
@@ -88,11 +88,10 @@ fn load_regex(keywords: Vec<String>, case_sensitive: bool) -> Vec<Regex> {
     keywords
         .iter()
         .map(|kw| {
-            let mut kw = kw.clone();
-            if !case_sensitive {
-                kw = "(?i)".to_owned() + &kw;
-            }
-            Regex::new(&kw).unwrap()
+            RegexBuilder::new(&kw)
+                .case_insensitive(!case_sensitive)
+                .build()
+                .unwrap()
         })
         .collect()
 }
