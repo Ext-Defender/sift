@@ -37,8 +37,6 @@ pub fn scan_manager(scan_settings: ScanSettings) {
         scan_settings.case_sensitive,
     ));
 
-    let instant = std::time::Instant::now();
-
     let mut handles: Vec<JoinHandle<()>> = Vec::new();
     for root in scan_settings.roots {
         let output_dir = scan_settings.output_dir.clone();
