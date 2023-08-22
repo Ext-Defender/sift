@@ -78,7 +78,7 @@ pub fn scan_manager(scan_settings: ScanSettings) {
         };
     }
 
-    println!("Scans completed: {}", instant.elapsed().as_secs());
+    println!("Scan(s) completed");
 }
 
 fn load_regex(keywords: Vec<String>, case_sensitive: bool) -> Vec<Regex> {
