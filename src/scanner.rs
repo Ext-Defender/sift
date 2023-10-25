@@ -8,14 +8,13 @@ use crossbeam::channel::Sender;
 use jwalk::WalkDirGeneric;
 use regex::Regex;
 
-const MAX_FILE_SCANS: usize = 5;
-
 pub fn scan(
     dir_walk: WalkDirGeneric<((), ())>,
     tx: Sender<ScanMessage>,
     patterns: Arc<Vec<Regex>>,
     last_timestamp: SystemTime,
     verbose: bool,
+    max_file_threads: usize,
 ) -> Result<(), Box<dyn Error>> {
     let mut handles: Vec<JoinHandle<()>> = Vec::new();
 
@@ -72,7 +71,7 @@ pub fn scan(
                 .unwrap();
             handles.push(handle);
 
-            while handles.len() == MAX_FILE_SCANS {
+            while handles.len() == max_file_threads {
                 handles.retain(|h| !h.is_finished());
             }
         }

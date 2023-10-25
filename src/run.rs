@@ -132,7 +132,7 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     if config.output_directory.is_some() {
         println!(
             "changing output directory to: {:?}",
-            config.output_directory
+            config.output_directory.as_ref().unwrap()
         );
         app_settings.initial_scan = true;
         app_settings.output_directory = config.output_directory;
@@ -193,6 +193,9 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
             Some(last_scan_time),
             PathBuf::from(&app_settings.output_directory.as_ref().unwrap()),
             config.case_sensitive,
+            app_settings.max_scan_threads,
+            app_settings.max_file_threads,
+            app_settings.max_write_lines,
         );
         app_settings.time_last_scan = Utc::now().to_string();
         scan_manager(scan_settings);

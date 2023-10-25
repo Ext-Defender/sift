@@ -12,6 +12,9 @@ pub struct ScanSettings {
     pub last_scan_time_stamp: Option<DateTime<Utc>>,
     pub output_dir: PathBuf,
     pub case_sensitive: bool,
+    pub max_scan_threads: usize,
+    pub max_file_threads: usize,
+    pub max_write_lines: u16,
 }
 
 impl ScanSettings {
@@ -23,6 +26,9 @@ impl ScanSettings {
         last_scan_time_stamp: Option<DateTime<Utc>>,
         output_dir: PathBuf,
         case_sensitive: bool,
+        max_scan_threads: usize,
+        max_file_threads: usize,
+        max_write_lines: u16,
     ) -> Self {
         let time_stamp = Utc::now();
         Self {
@@ -34,6 +40,9 @@ impl ScanSettings {
             last_scan_time_stamp,
             output_dir,
             case_sensitive,
+            max_scan_threads,
+            max_file_threads,
+            max_write_lines,
         }
     }
 }

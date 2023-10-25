@@ -17,8 +17,6 @@ use log4rs::encode::pattern::PatternEncoder;
 
 use regex::{Regex, RegexBuilder};
 
-const MAX_SCANS: usize = 2;
-
 pub fn scan_manager(scan_settings: ScanSettings) {
     build_logger(scan_settings.output_dir.clone());
     let last_time_stamp = match scan_settings.last_scan_time_stamp {
@@ -48,13 +46,14 @@ pub fn scan_manager(scan_settings: ScanSettings) {
             let (tx, rx) = unbounded::<ScanMessage>();
             let root_path = PathBuf::from(&root);
             let dir_walk = WalkDir::new(root_path);
-            writer(output_dir, &root, rx);
+            writer(output_dir, &root, rx, scan_settings.max_write_lines);
             match scan(
                 dir_walk,
                 tx.clone(),
                 patterns,
                 last_time_stamp,
                 scan_settings.verbose,
+                scan_settings.max_scan_threads,
             ) {
                 Ok(_) => (),
                 Err(e) => eprintln!("{:?} panic at {}", e, root),
@@ -65,7 +64,7 @@ pub fn scan_manager(scan_settings: ScanSettings) {
 
         handles.push(handle);
 
-        while handles.len() == MAX_SCANS {
+        while handles.len() == scan_settings.max_scan_threads {
             handles.retain(|h| !h.is_finished());
         }
     }

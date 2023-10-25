@@ -19,8 +19,7 @@ use crate::sift::ScanMessage::{Msg, END};
 /// * 'rx' - crossbeam receiver that receives thread_message enum.
 /// * "root" - the starting point for the scan.
 /// * "output_path" - the designated output directory for the csv files.
-pub fn writer(output_path: PathBuf, root: &String, rx: Receiver<ScanMessage>) {
-    let max_lines: u16 = 10000;
+pub fn writer(output_path: PathBuf, root: &String, rx: Receiver<ScanMessage>, max_lines: u16) {
     let mut written_lines: u16 = 0;
     let mut file_suffix: u32 = 1;
 
