@@ -1,6 +1,6 @@
 use chrono::prelude::*;
-#[allow(unused, dead_code)]
-use clap::{value_parser, Arg, ArgAction, Command};
+// #[allow(unused, dead_code)]
+// use clap::{value_parser, Arg, ArgAction, Command};
 use confy;
 use rpassword;
 use std::error::Error;
@@ -141,14 +141,17 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     confy::store("sift", None, &app_settings)?;
 
     if config.print_settings {
-        println!("_Config Settings_");
-        println!("Initial scan:{:>17}", app_settings.initial_scan);
+        println!("{:^60}", "_Config Settings_");
+        println!("Max scan threads:{:^50}", app_settings.max_scan_threads);
+        println!("Max file threads:{:^50}", app_settings.max_file_threads);
+        println!("Max write lines:{:^51}", app_settings.max_write_lines);
+        println!("Initial scan:{:^58}", app_settings.initial_scan);
         println!(
-            "Output directory:{:>15}",
+            "Output directory:{:^50}",
             app_settings.output_directory.as_ref().unwrap()
         );
         println!("Roots:{:#?}", app_settings.roots);
-        println!("Last scan:{:>48}", app_settings.time_last_scan);
+        println!("Last scan:{:^63}", app_settings.time_last_scan);
         println!("\nConfig file path:");
         println!(
             "\t{}\n",
@@ -161,10 +164,11 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
 
     if config.display_keywords {
-        println!("_keywords_");
+        println!("{:^50}", "_keywords_");
         for (index, keyword) in keywords.iter().enumerate() {
             println!("{:<1}: {:>5}", index + 1, keyword);
         }
+        println!();
     }
 
     if !prescan_checks(&app_settings) {
