@@ -33,10 +33,10 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         Err(_) => String::new(),
     };
 
-    if config.root.is_some() {
-        println!("adding roots: {:?}", config.root);
+    if config.roots.is_some() {
+        println!("adding roots: {:?}", config.roots);
         app_settings.initial_scan = true;
-        for root in config.root.unwrap() {
+        for root in config.roots.unwrap() {
             if !app_settings.roots.contains(&root) && Path::new(&root).exists() {
                 app_settings.roots.push(root);
             } else {
@@ -54,13 +54,6 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
                 }
             }
         }
-    }
-
-    if config.print_output_directory {
-        println!(
-            "output directory: {:?}",
-            app_settings.output_directory.as_ref().unwrap()
-        );
     }
 
     if config.display_keywords
@@ -146,13 +139,6 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     }
 
     confy::store("sift", None, &app_settings)?;
-
-    if config.display_root {
-        println!("_roots_");
-        for (index, root) in app_settings.roots.iter().enumerate() {
-            println!("{:<1}: {:>5}", index + 1, root);
-        }
-    }
 
     if config.print_settings {
         println!("{:#?}", app_settings);

@@ -6,14 +6,12 @@ pub struct Args {
     pub scan: bool,
     pub full_scan: bool,
     pub verbose: bool,
-    pub root: Option<Vec<String>>,
+    pub roots: Option<Vec<String>>,
     pub remove_roots: Option<Vec<String>>,
-    pub display_root: bool,
     pub add_keywords: Option<Vec<String>>,
     pub remove_keywords: Option<Vec<String>>,
     pub display_keywords: bool,
     pub output_directory: Option<String>,
-    pub print_output_directory: bool,
     pub print_settings: bool,
     pub reset_settings: bool,
     pub case_sensitive: bool,
@@ -22,9 +20,9 @@ pub struct Args {
 
 pub fn get_args() -> Result<Args, Box<dyn Error>> {
     let matches = Command::new("sift")
-        .author("Bryan Vinton, bryan.vinton18@gmail.com")
+        .author("Bryan Vinton, bvinton@ext-defender.net")
         .version(env!("CARGO_PKG_VERSION"))
-        .about("Searches for keywords in various document types")
+        .about("Searches for Regex patterns in common document types")
         .arg(
             Arg::new("scan")
                 .short('s')
@@ -57,12 +55,6 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
                 .action(ArgAction::Append),
         )
         .arg(
-            Arg::new("display_root")
-                .short('m')
-                .help("display directories to be searched")
-                .action(ArgAction::SetTrue),
-        )
-        .arg(
             Arg::new("add_keyword")
                 .short('a')
                 .value_name("keywords_to_add")
@@ -91,14 +83,8 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
                 .help("sets the output directory in app settings"),
         )
         .arg(
-            Arg::new("print_output_directory")
-                .short('l')
-                .help("prints the output directory path")
-                .action(ArgAction::SetTrue),
-        )
-        .arg(
             Arg::new("print_settings")
-                .short('z')
+                .short('l')
                 .value_name("print_settings")
                 .action(ArgAction::SetTrue)
                 .help("Print settings from config file."),
@@ -126,7 +112,7 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
         scan: matches.get_flag("scan"),
         full_scan: matches.get_flag("full_scan"),
         verbose: matches.get_flag("verbose"),
-        root: match matches.get_many::<String>("root") {
+        roots: match matches.get_many::<String>("root") {
             Some(c) => Some(c.into_iter().map(|v| v.clone()).collect()),
             None => None,
         },
@@ -134,7 +120,6 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
             Some(c) => Some(c.into_iter().map(|v| v.clone()).collect()),
             None => None,
         },
-        display_root: matches.get_flag("display_root"),
         add_keywords: match matches.get_many::<String>("add_keyword") {
             Some(c) => Some(c.into_iter().map(|v| v.clone()).collect()),
             None => None,
@@ -148,7 +133,6 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
             Some(c) => Some(c.clone()),
             None => None,
         },
-        print_output_directory: matches.get_flag("print_output_directory"),
         print_settings: matches.get_flag("print_settings"),
         reset_settings: matches.get_flag("reset_config"),
         case_sensitive: matches.get_flag("case-sensitive"),
