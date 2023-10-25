@@ -25,31 +25,33 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     let key = "SIFTPW";
     let mut password = match env::var(key) {
         Ok(p) => {
-            println!("INFO: Using password from env");
+            println!("INFO: Using password from env\n");
             p
         }
         Err(_) => String::new(),
     };
 
     if config.roots.is_some() {
-        println!("adding roots: {:?}", config.roots);
         app_settings.initial_scan = true;
         for root in config.roots.unwrap() {
             if !app_settings.roots.contains(&root) && Path::new(&root).exists() {
-                app_settings.roots.push(root);
+                println!("adding root: {}\n", root);
+                app_settings.roots.push(root.clone());
             } else {
-                println!("!'{}' already in root list", root);
+                println!("already in list: {}\n", root);
             }
         }
     }
 
     if config.remove_roots.is_some() {
-        println!("removing roots: {:?}", config.remove_roots);
         for root_to_remove in config.remove_roots.unwrap() {
-            for (index, root) in app_settings.roots.clone().iter().enumerate() {
-                if &root_to_remove == root {
-                    app_settings.roots.remove(index);
+            let i = app_settings.roots.iter().position(|r| *r == root_to_remove);
+            match i {
+                Some(i) => {
+                    println!("removing root: {}\n", root_to_remove);
+                    app_settings.roots.remove(i);
                 }
+                None => println!("not found: {}\n", root_to_remove),
             }
         }
     }
@@ -86,12 +88,9 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
 
     if config.add_keywords.is_some() {
         let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
-        println!(
-            "adding keywords: {:#?}",
-            config.add_keywords.as_ref().unwrap()
-        );
         for word in config.add_keywords.unwrap() {
             if !keywords.contains(&word) {
+                println!("adding patterns: {}", word);
                 app_settings
                     .keywords
                     .push(encryption::encrypt(word.as_bytes(), &password));
@@ -106,11 +105,13 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         let mut file = fs::File::open(config.pattern_file.unwrap()).unwrap();
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
-        let patterns: Vec<&str> = contents.split(|c| c == ',' || c == '\n').collect();
+        let patterns: Vec<&str> = contents
+            .split(|c| c == ',' || c == '\n' || c == '\r')
+            .collect();
         for pattern in patterns {
-            println!("adding keyword: {}", pattern);
             let pattern = pattern.to_string();
-            if !keywords.contains(&pattern) {
+            if !keywords.contains(&pattern) && pattern.len() > 0 {
+                println!("adding patterns: {:?}", pattern);
                 app_settings
                     .keywords
                     .push(encryption::encrypt(pattern.as_bytes(), &password));
@@ -121,14 +122,16 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
 
     if config.remove_keywords.is_some() {
         let mut keywords = load_keywords(&app_settings.keywords, &password).unwrap();
-        println!(
-            "removing keywords: {:#?}",
-            config.remove_keywords.as_ref().unwrap()
-        );
         for word in config.remove_keywords.unwrap() {
-            let i = keywords.iter().position(|w| *w == word).unwrap();
-            keywords.remove(i);
-            app_settings.keywords.remove(i);
+            let i = keywords.iter().position(|w| *w == word);
+            match i {
+                Some(i) => {
+                    println!("removing patterns: {}", word);
+                    keywords.remove(i);
+                    app_settings.keywords.remove(i);
+                }
+                None => println!("Not found: {}", word),
+            }
         }
         println!();
     }

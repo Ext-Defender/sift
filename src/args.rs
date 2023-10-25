@@ -47,13 +47,15 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
             Arg::new("root")
                 .short('r')
                 .help("add directory to search")
-                .action(ArgAction::Append),
+                .action(ArgAction::Append)
+                .num_args(1..),
         )
         .arg(
             Arg::new("remove_root")
                 .short('R')
                 .help("remove a directory from search")
-                .action(ArgAction::Append),
+                .action(ArgAction::Append)
+                .num_args(1..),
         )
         .arg(
             Arg::new("add_keyword")
