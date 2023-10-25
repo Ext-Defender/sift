@@ -86,7 +86,10 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
 
     if config.add_keywords.is_some() {
         let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
-        println!("adding keywords: {:?}", config.add_keywords);
+        println!(
+            "adding keywords: {:#?}",
+            config.add_keywords.as_ref().unwrap()
+        );
         for word in config.add_keywords.unwrap() {
             if !keywords.contains(&word) {
                 app_settings
@@ -95,6 +98,7 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
                 app_settings.initial_scan = true;
             }
         }
+        println!();
     }
 
     if config.pattern_file.is_some() {
@@ -116,15 +120,17 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     }
 
     if config.remove_keywords.is_some() {
-        let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
-        println!("removing keywords: {:?}", config.remove_keywords);
+        let mut keywords = load_keywords(&app_settings.keywords, &password).unwrap();
+        println!(
+            "removing keywords: {:#?}",
+            config.remove_keywords.as_ref().unwrap()
+        );
         for word in config.remove_keywords.unwrap() {
-            for (index, keyword) in keywords.iter().enumerate() {
-                if &word == keyword {
-                    app_settings.keywords.remove(index);
-                }
-            }
+            let i = keywords.iter().position(|w| *w == word).unwrap();
+            keywords.remove(i);
+            app_settings.keywords.remove(i);
         }
+        println!();
     }
 
     if config.output_directory.is_some() {

@@ -61,13 +61,15 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
                 .value_name("keywords_to_add")
                 .action(ArgAction::Append)
                 .num_args(1..)
-                .help("adds keyword(s) to database"),
+                .help("adds keyword(s) to config file"),
         )
         .arg(
             Arg::new("remove_keyword")
                 .short('A')
                 .value_name("keywords_to_remove")
-                .help("removes keyword from database"),
+                .help("removes keyword from config file")
+                .action(ArgAction::Append)
+                .num_args(1..),
         )
         .arg(
             Arg::new("display_keywords")
