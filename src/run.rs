@@ -141,8 +141,21 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     confy::store("sift", None, &app_settings)?;
 
     if config.print_settings {
-        println!("{:#?}", app_settings);
-        println!("{:?}", confy::get_configuration_file_path("sift", None));
+        println!("_Config Settings_");
+        println!("Initial scan:{:>17}", app_settings.initial_scan);
+        println!(
+            "Output directory:{:>15}",
+            app_settings.output_directory.as_ref().unwrap()
+        );
+        println!("Roots:{:#?}", app_settings.roots);
+        println!("Last scan:{:>48}", app_settings.time_last_scan);
+        println!("\nConfig file path:");
+        println!(
+            "\t{}\n",
+            confy::get_configuration_file_path("sift", None)
+                .unwrap()
+                .display()
+        );
     }
 
     let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
