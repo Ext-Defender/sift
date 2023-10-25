@@ -16,6 +16,7 @@ pub struct Args {
     pub reset_settings: bool,
     pub case_sensitive: bool,
     pub pattern_file: Option<String>,
+    pub config_file: String,
 }
 
 pub fn get_args() -> Result<Args, Box<dyn Error>> {
@@ -104,7 +105,14 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
         .arg(
             Arg::new("pattern_file")
                 .short('f')
-                .help("provide a path to a text file containing patterns (comma separated)"),
+                .help("provide a path to a text file containing patterns (comma separated)")
+                .default_value(None),
+        )
+        .arg(
+            Arg::new("config_name")
+                .short('c')
+                .help("specify the config name you want to use")
+                .default_value("Default"),
         )
         .get_matches();
 
@@ -140,5 +148,9 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
             Some(pf) => Some(pf.to_string()),
             None => None,
         },
+        config_file: matches
+            .get_one::<String>("config_name")
+            .unwrap()
+            .to_string(),
     })
 }

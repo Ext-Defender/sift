@@ -8,18 +8,55 @@ use zip;
 
 use xml::reader::EventReader;
 
-pub fn scan_file(path: &PathBuf, patterns: &Vec<Regex>) -> Option<(Vec<String>, String)> {
+pub fn scan_file(
+    path: &PathBuf,
+    patterns: &Vec<Regex>,
+    verbose: bool,
+) -> Option<(Vec<String>, String)> {
     let ret = match path.extension() {
         Some(ext) => match ext.to_str() {
-            Some("pdf") => scan_pdf(&path, &patterns),
-            Some("xlsx") | Some("pptx") | Some("docx") => scan_ooxml(&path, &patterns),
+            Some("pdf") => {
+                if verbose {
+                    println!("Scanning: {:#}", path.display())
+                }
+                scan_pdf(&path, &patterns)
+            }
+            Some("xlsx") | Some("pptx") | Some("docx") => {
+                if verbose {
+                    println!("Scanning: {:#}", path.display())
+                }
+                scan_ooxml(&path, &patterns)
+            }
             Some("txt") | Some("xml") | Some("html") | Some("htm") | Some("csv") => {
+                if verbose {
+                    println!("Scanning: {:#}", path.display())
+                }
                 scan_txt(&path, &patterns)
             }
-            Some("rtf") | Some("wpd") => scan_rtf(&path, &patterns),
-            Some("doc") | Some("ppt") | Some("xls") => scan_legacy_office(&path, &patterns),
-            Some("msg") => scan_msg(&path, &patterns),
-            _ => None,
+            Some("rtf") | Some("wpd") => {
+                if verbose {
+                    println!("Scanning: {:#}", path.display())
+                }
+                scan_rtf(&path, &patterns)
+            }
+            Some("doc") | Some("ppt") | Some("xls") => {
+                if verbose {
+                    println!("Scanning: {:#}", path.display())
+                }
+                scan_legacy_office(&path, &patterns)
+            }
+            Some("msg") => {
+                if verbose {
+                    println!("Scanning: {:#}", path.display())
+                }
+                scan_msg(&path, &patterns)
+            }
+            _ => {
+                if verbose {
+                    println!("Did not scan: {:#}", path.display())
+                }
+                None
+            }
         },
         _ => None,
     };

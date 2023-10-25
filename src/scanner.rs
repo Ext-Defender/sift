@@ -41,14 +41,10 @@ pub fn scan(
         if scan_file {
             let file_name = dir_entry.file_name().to_string_lossy().to_string();
 
-            if verbose {
-                println!("Attempting to scan: {}", file_name);
-            }
-
             let handle = thread::Builder::new()
                 .name(format!("{}", dir_entry.path().to_string_lossy()))
                 .spawn(move || {
-                    let findings = file_handler::scan_file(&path, &patterns);
+                    let findings = file_handler::scan_file(&path, &patterns, verbose);
 
                     if findings.is_some() {
                         if verbose {

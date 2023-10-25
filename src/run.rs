@@ -16,11 +16,11 @@ use crate::scan_settings::ScanSettings;
 
 pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
     if config.reset_settings {
-        println!("Clearing configs");
-        confy::store("sift", None, ConfigFile::default())?;
+        println!("***Clearing configs***");
+        confy::store("sift", &*config.config_file, ConfigFile::default())?;
     }
 
-    let mut app_settings: ConfigFile = confy::load("sift", None)?;
+    let mut app_settings: ConfigFile = confy::load("sift", &*config.config_file)?;
 
     let key = "SIFTPW";
     let mut password = match env::var(key) {
@@ -136,10 +136,11 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         app_settings.output_directory = config.output_directory;
     }
 
-    confy::store("sift", None, &app_settings)?;
+    confy::store("sift", &*config.config_file, &app_settings)?;
 
     if config.print_settings {
         println!("{:^60}", "_Config Settings_");
+        println!("Config name:{:^60}", config.config_file);
         println!("Max scan threads:{:^50}", app_settings.max_scan_threads);
         println!("Max file threads:{:^50}", app_settings.max_file_threads);
         println!("Max write lines:{:^51}", app_settings.max_write_lines);
@@ -153,7 +154,7 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         println!("\nConfig file path:");
         println!(
             "\t{}\n",
-            confy::get_configuration_file_path("sift", None)
+            confy::get_configuration_file_path("sift", &*config.config_file)
                 .unwrap()
                 .display()
         );
@@ -203,7 +204,7 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         scan_manager(scan_settings);
     }
 
-    confy::store("sift", None, &app_settings)?;
+    confy::store("sift", &*config.config_file, &app_settings)?;
 
     Ok(())
 }
