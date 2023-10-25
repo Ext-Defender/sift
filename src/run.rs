@@ -138,7 +138,6 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
             "changing output directory to: {:?}",
             config.output_directory.as_ref().unwrap()
         );
-        app_settings.initial_scan = true;
         app_settings.output_directory = config.output_directory;
     }
 
