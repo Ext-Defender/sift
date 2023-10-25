@@ -1,6 +1,4 @@
 use chrono::prelude::*;
-// #[allow(unused, dead_code)]
-// use clap::{value_parser, Arg, ArgAction, Command};
 use confy;
 use rpassword;
 use std::error::Error;
