@@ -8,9 +8,9 @@ pub struct Args {
     pub verbose: bool,
     pub roots: Option<Vec<String>>,
     pub remove_roots: Option<Vec<String>>,
-    pub add_keywords: Option<Vec<String>>,
-    pub remove_keywords: Option<Vec<String>>,
-    pub display_keywords: bool,
+    pub add_patterns: Option<Vec<String>>,
+    pub remove_patterns: Option<Vec<String>>,
+    pub display_patterns: bool,
     pub output_directory: Option<String>,
     pub print_settings: bool,
     pub reset_settings: bool,
@@ -58,25 +58,25 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
                 .num_args(1..),
         )
         .arg(
-            Arg::new("add_keyword")
+            Arg::new("add_patterns")
                 .short('a')
-                .value_name("keywords_to_add")
+                // .value_name("keywords_to_add")
                 .action(ArgAction::Append)
                 .num_args(1..)
-                .help("adds keyword(s) to config file"),
+                .help("adds patterns(s) to config file"),
         )
         .arg(
-            Arg::new("remove_keyword")
+            Arg::new("remove_patterns")
                 .short('A')
-                .value_name("keywords_to_remove")
-                .help("removes keyword from config file")
+                // .value_name("keywords_to_remove")
+                .help("removes patterns from config file")
                 .action(ArgAction::Append)
                 .num_args(1..),
         )
         .arg(
-            Arg::new("display_keywords")
+            Arg::new("display_patterns")
                 .short('k')
-                .value_name("display_keywords")
+                // .value_name("display_keywords")
                 .help("displays decrypted keywords list")
                 .action(ArgAction::SetTrue),
         )
@@ -132,15 +132,15 @@ pub fn get_args() -> Result<Args, Box<dyn Error>> {
             Some(c) => Some(c.into_iter().map(|v| v.clone()).collect()),
             None => None,
         },
-        add_keywords: match matches.get_many::<String>("add_keyword") {
+        add_patterns: match matches.get_many::<String>("add_patterns") {
             Some(c) => Some(c.into_iter().map(|v| v.clone()).collect()),
             None => None,
         },
-        remove_keywords: match matches.get_many::<String>("remove_keyword") {
+        remove_patterns: match matches.get_many::<String>("remove_patterns") {
             Some(c) => Some(c.into_iter().map(|v| v.clone()).collect()),
             None => None,
         },
-        display_keywords: matches.get_flag("display_keywords"),
+        display_patterns: matches.get_flag("display_patterns"),
         output_directory: match matches.get_one::<String>("set_output_directory") {
             Some(c) => Some(c.clone()),
             None => None,

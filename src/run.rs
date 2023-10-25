@@ -56,11 +56,11 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if config.display_keywords
+    if config.display_patterns
         || config.scan
         || config.full_scan
-        || config.remove_keywords.is_some()
-        || config.add_keywords.is_some()
+        || config.remove_patterns.is_some()
+        || config.add_patterns.is_some()
         || config.pattern_file.is_some()
     {
         if password.is_empty() {
@@ -86,9 +86,9 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if config.add_keywords.is_some() {
+    if config.add_patterns.is_some() {
         let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
-        for word in config.add_keywords.unwrap() {
+        for word in config.add_patterns.unwrap() {
             if !keywords.contains(&word) {
                 println!("adding patterns: {}", word);
                 app_settings
@@ -120,9 +120,9 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if config.remove_keywords.is_some() {
+    if config.remove_patterns.is_some() {
         let mut keywords = load_keywords(&app_settings.keywords, &password).unwrap();
-        for word in config.remove_keywords.unwrap() {
+        for word in config.remove_patterns.unwrap() {
             let i = keywords.iter().position(|w| *w == word);
             match i {
                 Some(i) => {
@@ -170,7 +170,7 @@ pub fn run(config: Args) -> Result<(), Box<dyn Error>> {
 
     let keywords = load_keywords(&app_settings.keywords, &password).unwrap();
 
-    if config.display_keywords {
+    if config.display_patterns {
         println!("{:^50}", "_keywords_");
         for (index, keyword) in keywords.iter().enumerate() {
             println!("{:<1}: {:>5}", index + 1, keyword);
